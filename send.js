@@ -81,6 +81,7 @@
     fd.append('videos_checked', D.videos);
     fd.append('video_ref_id', '');
     fd.append('feedback', feedback);
+    fd.append('photo', new File([], ''));  // empty file, exactly like the tracker form
     fd.append('location_address', '');
     fd.append('latitude', '');
     fd.append('longitude', '');
