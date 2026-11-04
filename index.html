@@ -570,7 +570,7 @@ footer.note {
     <button class="theme-toggle" id="theme-toggle">◐ Theme</button>
     <div class="eyebrow">Vendor Visit Tracker</div>
     <h1>Visit Feedback Pusher</h1>
-    <p class="sub">Paste a TSV with the team name in the first column — exactly what you get copying from your sheet. The page checks every row against the tracker's business list and pushes it straight to the tracker — no console needed. With auto-push on, pasting is all it takes.</p>
+    <p class="sub">Paste a TSV with the team name in the first column — exactly what you get copying from your sheet. The page checks every row against the tracker's business list and opens the tracker with your rows. Click the <strong>Send feedback</strong> bookmark there and every row is sent.</p>
   </header>
 
   <div class="card">
@@ -618,7 +618,7 @@ Vendor Team A	collector2@example.com	I explained the approved placement...	I che
       <label class="check"><input type="checkbox" id="v2" checked> 2nd</label>
       <label class="check"><input type="checkbox" id="v3" checked> 3rd</label>
       <span class="lead" style="margin-left:12px">Paste</span>
-      <label class="check"><input type="checkbox" id="autopush" checked> Push automatically</label>
+      <label class="check"><input type="checkbox" id="autopush" checked> Open tracker automatically</label>
     </div>
 
     <details class="format">
@@ -662,7 +662,7 @@ Vendor Team B    collector5@example.com    I explained the capture app...    I r
         <input id="t3" type="text" placeholder="e.g. 17:00" autocomplete="off">
       </div>
     </div>
-    <p style="margin:14px 0 0;color:var(--fg-mute);font-size:12.5px;line-height:1.55">Times are in your browser's local clock, 24-hour. Leave a visit blank to send it right away. Keep this page open until the push finishes — it waits here for any scheduled times. Keep the tab in front if you can: browsers slow down timers in background tabs, so gaps can stretch to about a minute.</p>
+    <p style="margin:14px 0 0;color:var(--fg-mute);font-size:12.5px;line-height:1.55">Times are in your browser's local clock, 24-hour. The <strong>gap</strong> applies to every method. The <strong>run-at times</strong> only apply to the two fallbacks below (direct push and console script); the bookmark sends right away. When a fallback is waiting, keep its tab open and in front if you can: browsers slow down timers in background tabs.</p>
   </div>
 
   <div class="card" id="preview-card" hidden>
@@ -671,36 +671,39 @@ Vendor Team B    collector5@example.com    I explained the capture app...    I r
   </div>
 
   <div class="card" id="script-card" hidden>
-    <h2>Push to tracker</h2>
-    <div class="notice" id="push-status">Ready.</div>
-    <div class="actions" style="margin-top:0">
-      <button class="btn btn-primary" id="push-btn">Push now</button>
-      <button class="btn btn-ghost" id="stop-btn" hidden>Stop</button>
-      <button class="btn btn-ghost" id="forget-btn">Forget sent history</button>
+    <h2>Send to tracker</h2>
+    <ol class="steps">
+      <li>One time only: drag this button to your bookmarks bar → <a class="btn btn-ghost" id="bookmarklet" href="#" title="Drag me to the bookmarks bar">Send feedback</a></li>
+      <li>Paste your table above. The tracker form opens in a new tab with your rows (or press <strong>Send now</strong>).</li>
+      <li>In that tab, click the <strong>Send feedback</strong> bookmark. A panel shows each row being sent and a final count. Keep the tab open until it says <strong>Done</strong>.</li>
+    </ol>
+    <div class="actions">
+      <button class="btn btn-primary" id="send-btn">Send now</button>
+      <span id="send-feedback" hidden class="copied"></span>
     </div>
-    <p class="hint">Rows already pushed from this browser are remembered and skipped, so pasting the same table again won't create duplicates. <em>Forget sent history</em> clears that memory.</p>
-    <ol class="log" id="push-log"></ol>
+    <p class="hint">Only rows matched to a tracker business are sent. Rows already sent from that browser are skipped, so clicking the bookmark twice never double-submits. The tracker confirms each row with "Data has been saved".</p>
 
     <details class="format">
-      <summary>Fallback: send from the tracker's own tab instead</summary>
+      <summary>Fallback: push directly from this page (no bookmark)</summary>
       <div class="inside">
-        <p style="margin:10px 0 0"><strong>One-click bookmark</strong></p>
-        <ol class="steps" style="margin-top:10px">
-          <li>One time only: drag this button to your bookmarks bar → <a class="btn btn-ghost" id="bookmarklet" href="#" title="Drag me to the bookmarks bar">Send feedback</a></li>
-          <li>Press <strong>Send now</strong>. The tracker form opens in a new tab with your rows.</li>
-          <li>In that tab, click the <strong>Send feedback</strong> bookmark. A panel shows each row being sent and a final count. Keep the tab open until it says Done.</li>
-        </ol>
-        <div class="actions">
-          <button class="btn btn-ghost" id="send-btn">Send now</button>
-          <span id="send-feedback" hidden class="copied"></span>
+        <p class="hint" style="margin-top:10px">Sends from this page and follows the run-at times. The tracker doesn't let this page read its reply, so a row counts as sent once the request goes out — check the sheet after using it.</p>
+        <div class="notice" id="push-status" style="margin-top:12px">Ready.</div>
+        <div class="actions" style="margin-top:0">
+          <button class="btn btn-ghost" id="push-btn">Push now</button>
+          <button class="btn btn-ghost" id="stop-btn" hidden>Stop</button>
+          <button class="btn btn-ghost" id="forget-btn">Forget sent history</button>
         </div>
-        <p class="hint">This sends right away and ignores the scheduled times. Rows already sent from that browser are skipped if you click twice.</p>
+        <ol class="log" id="push-log"></ol>
+      </div>
+    </details>
 
-        <p style="margin:22px 0 0"><strong>Console script</strong></p>
+    <details class="format">
+      <summary>Fallback: console script</summary>
+      <div class="inside">
         <ol class="steps" style="margin-top:10px">
           <li>Open the tracker in Chrome at <code>ita.indivillage.com/Only_Google_Sheet_Business_Feedback/</code>.</li>
           <li>Open the browser console. Windows: press <strong>F12</strong>. Mac: press <strong>⌥ ⌘ J</strong>. Click the <strong>Console</strong> tab.</li>
-          <li>Click <strong>Copy console script</strong>, paste it in the tracker's console and press <strong>Enter</strong>. It follows the gap and scheduled times. Keep that tab open until it prints <em>Done</em>.</li>
+          <li>Click <strong>Copy console script</strong>, paste it in the tracker's console and press <strong>Enter</strong>. It follows the gap and run-at times. Keep that tab open until it prints <em>Done</em>.</li>
         </ol>
         <div class="actions">
           <button class="btn btn-ghost" id="copy-btn">Copy console script</button>
@@ -1042,7 +1045,7 @@ function renderPreview() {
     <div class="stat"><div class="stat-value">${teams.length}</div><div class="stat-label">Teams</div></div>
     <div class="stat"><div class="stat-value">${uniqueCollectors}</div><div class="stat-label">Collectors</div></div>
     <div class="stat"><div class="stat-value">${rows.length}</div><div class="stat-label">Submissions</div></div>
-    <div class="stat"><div class="stat-value">${readyCount}</div><div class="stat-label">Ready to push</div></div>
+    <div class="stat"><div class="stat-value">${readyCount}</div><div class="stat-label">Ready to send</div></div>
     <div class="stat"><div class="stat-value">${sentCount}</div><div class="stat-label">Already sent</div></div>
     <div class="stat"><div class="stat-value">${badCount}</div><div class="stat-label">Not on tracker</div></div>
   </div>`;
@@ -1262,24 +1265,6 @@ async function startPush() {
   }
 }
 
-// Short countdown after a paste, so a wrong paste can still be cancelled.
-const AUTO_DELAY = 5;
-function startCountdown() {
-  cancelCountdown();
-  const ready = currentPlan.filter(p => p.match.ok && !p.sent).length;
-  if (master.state === 'ready' && !ready) return;  // renderPreview already explained why
-  let n = AUTO_DELAY;
-  const step = () => {
-    if (n <= 0) { run.countdown = null; startPush(); return; }
-    setStatus(`Pasted — pushing automatically in ${n}s. Click Cancel to stop.`);
-    n--;
-    run.countdown = setTimeout(step, 1000);
-  };
-  run.countdown = -1;
-  setRunning(false);
-  step();
-}
-
 function cancelCountdown() {
   if (run.countdown) {
     if (run.countdown !== -1) clearTimeout(run.countdown);
@@ -1484,7 +1469,7 @@ $('forget-btn').addEventListener('click', () => {
   renderPreview();
 });
 
-// A pasted table replaces the box's contents, then pushes automatically.
+// A pasted table replaces the box's contents, then opens the tracker with the rows.
 $('input').addEventListener('paste', (e) => {
   const text = e.clipboardData && e.clipboardData.getData('text');
   const looksLikeTable = text && /\t/.test(text) && /[\w.+-]+@[\w.-]+\.\w+/.test(text);
@@ -1495,7 +1480,7 @@ $('input').addEventListener('paste', (e) => {
   }
   setTimeout(() => {
     renderPreview();
-    if (looksLikeTable && $('autopush').checked && !run.active) startCountdown();
+    if (looksLikeTable && $('autopush').checked) openTracker(true);
   }, 0);
 });
 
@@ -1506,7 +1491,6 @@ $('center').addEventListener('change', () => { if (master.state === 'ready') fil
   try { const v = localStorage.getItem(KEY); if (v != null) $('autopush').checked = v === '1'; } catch (e) {}
   $('autopush').addEventListener('change', () => {
     try { localStorage.setItem(KEY, $('autopush').checked ? '1' : '0'); } catch (e) {}
-    if (!$('autopush').checked && cancelCountdown()) setStatus('Auto-push cancelled.', 'warn');
   });
 })();
 
@@ -1562,26 +1546,37 @@ document.getElementById('bookmarklet').addEventListener('click', (e) => {
   alert('Drag this button to your bookmarks bar, then click it on the tracker tab.');
 });
 
-document.getElementById('send-btn').addEventListener('click', () => {
-  const fb = document.getElementById('send-feedback');
-  if (!currentRows.length) {
-    fb.textContent = '⚠ Nothing to send. Parse a table first.';
-    fb.hidden = false;
-    return;
+function openTracker(fromPaste) {
+  const fb = $('send-feedback');
+  const say = (t) => { fb.textContent = t; fb.hidden = false; };
+  if (!currentRows.length) return say('⚠ Nothing to send. Paste a table first.');
+
+  // With the tracker list loaded, send only matched rows, using the tracker's spelling
+  // of team and project so the form's dropdowns accept them. Otherwise send everything
+  // and let the bookmark match on the tracker page.
+  let rows = currentRows, project = currentDefaults.project, skipped = 0;
+  if (master.state === 'ready') {
+    const ok = currentPlan.filter(p => p.match.ok);
+    skipped = currentPlan.length - ok.length;
+    if (!ok.length) return say('⚠ No rows match a business on the tracker — see the Tracker column.');
+    rows = ok.map(p => ({ ...p, vendor: p.match.team }));
+    project = ok[0].match.project;
   }
   const payload = {
     center: currentDefaults.center,
-    project: currentDefaults.project,
+    project,
     videos: currentDefaults.videos_checked,
-    gap: Math.max(0, parseFloat(document.getElementById('gap').value) || 0),
-    rows: currentRows.map(r => [r.vendor, r.email, r.visit, r.feedback]),
+    gap: Math.max(0, parseFloat($('gap').value) || 0),
+    rows: rows.map(r => [r.vendor, r.email, r.visit, r.feedback]),
   };
   const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(payload))))
     .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-  window.open(TRACKER_URL + '#vfp=' + b64, '_blank');
-  fb.textContent = '✓ Tracker opened with ' + currentRows.length + ' rows. Click the Send feedback bookmark there.';
-  fb.hidden = false;
-});
+  const tab = window.open(TRACKER_URL + '#vfp=' + b64, '_blank');
+  if (!tab) return say(fromPaste ? '⚠ The browser blocked the new tab. Press Send now.' : '⚠ The browser blocked the new tab. Allow pop-ups for this site and try again.');
+  say(`✓ Tracker opened with ${rows.length} row${rows.length === 1 ? '' : 's'}${skipped ? ` (${skipped} unmatched left out)` : ''}. Click the Send feedback bookmark there.`);
+}
+
+$('send-btn').addEventListener('click', () => openTracker(false));
 
 document.getElementById('copy-btn').addEventListener('click', async () => {
   const script = buildScript();
