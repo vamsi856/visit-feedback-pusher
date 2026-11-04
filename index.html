@@ -1,9 +1,12 @@
+<meta charset="utf-8">
 <title>Visit Feedback Pusher</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
+[hidden] { display: none !important; }
+
 :root {
   /* Layout: single column — defaults, paste area, parsed preview, then the pushable script */
 
@@ -340,6 +343,40 @@ table.preview td:nth-child(2) { color: var(--fg); white-space: nowrap }
 table.preview td:nth-child(3) { white-space: nowrap }
 table.preview td:nth-child(4) { white-space: nowrap }
 table.preview td:nth-child(5) { max-width: 420px; min-width: 240px; }
+table.preview td:nth-child(6) { white-space: nowrap; font-family: var(--font-ui); font-size: 12px; }
+.st-ok { color: var(--success); font-weight: 600; }
+.st-sent { color: var(--fg-mute); }
+.st-bad { color: var(--danger); font-weight: 600; }
+
+.hint { margin: 12px 0 0; color: var(--fg-mute); font-size: 12.5px; line-height: 1.55; }
+.hint.bad { color: var(--danger); }
+.hint.ok { color: var(--success); }
+
+.notice.ok {
+  background: color-mix(in srgb, var(--success) 14%, transparent);
+  color: var(--success);
+  border-left-color: var(--success);
+}
+
+ol.log {
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 8px 12px;
+  max-height: 260px;
+  overflow: auto;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.6;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--fg-dim);
+}
+ol.log:empty { display: none; }
+ol.log li { overflow-wrap: anywhere; }
+ol.log li.ok { color: var(--success); }
+ol.log li.bad { color: var(--danger); }
+ol.log li.info { color: var(--accent); }
 
 .visit-tag {
   display: inline-block;
@@ -533,7 +570,7 @@ footer.note {
     <button class="theme-toggle" id="theme-toggle">◐ Theme</button>
     <div class="eyebrow">Vendor Visit Tracker</div>
     <h1>Visit Feedback Pusher</h1>
-    <p class="sub">Paste a TSV with the team name in the first column — exactly what you get copying from your sheet. Review the parsed rows, set timing if you want, then copy the script and run it in the tracker's browser console to push every row.</p>
+    <p class="sub">Paste a TSV with the team name in the first column — exactly what you get copying from your sheet. The page checks every row against the tracker's business list and pushes it straight to the tracker — no console needed. With auto-push on, pasting is all it takes.</p>
   </header>
 
   <div class="card">
@@ -553,7 +590,8 @@ footer.note {
       </div>
       <div>
         <label for="project">Project name</label>
-        <input id="project" type="text" value="Supernova" autocomplete="off">
+        <input id="project" type="text" value="Supernova" autocomplete="off" list="project-list">
+        <datalist id="project-list"></datalist>
       </div>
       <div>
         <label for="videos">Recorded videos checked?</label>
@@ -563,6 +601,7 @@ footer.note {
         </select>
       </div>
     </div>
+    <p class="hint" id="master-status">Loading the tracker's business list…</p>
   </div>
 
   <div class="card">
@@ -578,6 +617,8 @@ Vendor Team A	collector2@example.com	I explained the approved placement...	I che
       <label class="check"><input type="checkbox" id="v1" checked> 1st</label>
       <label class="check"><input type="checkbox" id="v2" checked> 2nd</label>
       <label class="check"><input type="checkbox" id="v3" checked> 3rd</label>
+      <span class="lead" style="margin-left:12px">Paste</span>
+      <label class="check"><input type="checkbox" id="autopush" checked> Push automatically</label>
     </div>
 
     <details class="format">
@@ -593,7 +634,7 @@ Vendor Team B    collector5@example.com    I explained the capture app...    I r
     </details>
 
     <div class="actions">
-      <button class="btn btn-primary" id="parse-btn">Parse table</button>
+      <button class="btn btn-primary" id="parse-btn">Check table</button>
       <button class="btn btn-ghost" id="upload-btn">Upload .tsv / .csv</button>
       <button class="btn btn-ghost" id="sample-btn">Load sample</button>
       <button class="btn btn-ghost" id="clear-btn">Clear</button>
@@ -621,7 +662,7 @@ Vendor Team B    collector5@example.com    I explained the capture app...    I r
         <input id="t3" type="text" placeholder="e.g. 17:00" autocomplete="off">
       </div>
     </div>
-    <p style="margin:14px 0 0;color:var(--fg-mute);font-size:12.5px;line-height:1.55">Times are in your browser's local clock, 24-hour. Leave a visit blank to send it as soon as the script runs. The tracker tab must stay open through all scheduled times — the script sits in its console and waits.</p>
+    <p style="margin:14px 0 0;color:var(--fg-mute);font-size:12.5px;line-height:1.55">Times are in your browser's local clock, 24-hour. Leave a visit blank to send it right away. Keep this page open until the push finishes — it waits here for any scheduled times. Keep the tab in front if you can: browsers slow down timers in background tabs, so gaps can stretch to about a minute.</p>
   </div>
 
   <div class="card" id="preview-card" hidden>
@@ -630,30 +671,43 @@ Vendor Team B    collector5@example.com    I explained the capture app...    I r
   </div>
 
   <div class="card" id="script-card" hidden>
-    <h2>Send</h2>
-    <ol class="steps">
-      <li>One time only: drag this button to your bookmarks bar → <a class="btn btn-ghost" id="bookmarklet" href="#" title="Drag me to the bookmarks bar">Send feedback</a></li>
-      <li>Press <strong>Send now</strong>. The tracker form opens in a new tab with your rows.</li>
-      <li>In that tab, click the <strong>Send feedback</strong> bookmark. A panel shows each row being sent and a final count. Keep the tab open until it says Done.</li>
-    </ol>
-    <div class="actions">
-      <button class="btn btn-primary" id="send-btn">Send now</button>
-      <span id="send-feedback" hidden class="copied"></span>
+    <h2>Push to tracker</h2>
+    <div class="notice" id="push-status">Ready.</div>
+    <div class="actions" style="margin-top:0">
+      <button class="btn btn-primary" id="push-btn">Push now</button>
+      <button class="btn btn-ghost" id="stop-btn" hidden>Stop</button>
+      <button class="btn btn-ghost" id="forget-btn">Forget sent history</button>
     </div>
-    <p style="margin:14px 0 0;color:var(--fg-mute);font-size:12.5px;line-height:1.55">This sends right away and ignores the scheduled times. The tracker won't take submissions from this page directly, so the bookmark does the sending from the tracker's own tab. Rows already sent from that browser are skipped if you click twice.</p>
+    <p class="hint">Rows already pushed from this browser are remembered and skipped, so pasting the same table again won't create duplicates. <em>Forget sent history</em> clears that memory.</p>
+    <ol class="log" id="push-log"></ol>
 
-    <h2 style="margin-top:28px">Or: console script</h2>
-    <ol class="steps">
-      <li>Open the tracker in Chrome at <code>ita.indivillage.com/Only_Google_Sheet_Business_Feedback/</code> (any page on that host works).</li>
-      <li>Open the browser console. Windows: press <strong>F12</strong>. Mac: press <strong>⌥ ⌘ J</strong>. Click the <strong>Console</strong> tab.</li>
-      <li>Click <strong>Copy console script</strong> below, switch to the tracker tab, paste in the console and press <strong>Enter</strong>.</li>
-      <li>The script loads each team's business list, then runs the submissions — waiting for any scheduled times you set and the gap between submissions. Keep the tab open the whole time. Watch the console for live progress and a final count.</li>
-    </ol>
+    <details class="format">
+      <summary>Fallback: send from the tracker's own tab instead</summary>
+      <div class="inside">
+        <p style="margin:10px 0 0"><strong>One-click bookmark</strong></p>
+        <ol class="steps" style="margin-top:10px">
+          <li>One time only: drag this button to your bookmarks bar → <a class="btn btn-ghost" id="bookmarklet" href="#" title="Drag me to the bookmarks bar">Send feedback</a></li>
+          <li>Press <strong>Send now</strong>. The tracker form opens in a new tab with your rows.</li>
+          <li>In that tab, click the <strong>Send feedback</strong> bookmark. A panel shows each row being sent and a final count. Keep the tab open until it says Done.</li>
+        </ol>
+        <div class="actions">
+          <button class="btn btn-ghost" id="send-btn">Send now</button>
+          <span id="send-feedback" hidden class="copied"></span>
+        </div>
+        <p class="hint">This sends right away and ignores the scheduled times. Rows already sent from that browser are skipped if you click twice.</p>
 
-    <div class="actions">
-      <button class="btn btn-ghost" id="copy-btn">Copy console script</button>
-      <span id="copy-feedback" hidden class="copied">✓ Copied — now paste in the tracker console</span>
-    </div>
+        <p style="margin:22px 0 0"><strong>Console script</strong></p>
+        <ol class="steps" style="margin-top:10px">
+          <li>Open the tracker in Chrome at <code>ita.indivillage.com/Only_Google_Sheet_Business_Feedback/</code>.</li>
+          <li>Open the browser console. Windows: press <strong>F12</strong>. Mac: press <strong>⌥ ⌘ J</strong>. Click the <strong>Console</strong> tab.</li>
+          <li>Click <strong>Copy console script</strong>, paste it in the tracker's console and press <strong>Enter</strong>. It follows the gap and scheduled times. Keep that tab open until it prints <em>Done</em>.</li>
+        </ol>
+        <div class="actions">
+          <button class="btn btn-ghost" id="copy-btn">Copy console script</button>
+          <span id="copy-feedback" hidden class="copied">✓ Copied — now paste in the tracker console</span>
+        </div>
+      </div>
+    </details>
   </div>
 
   <footer class="note">Form settings applied to every submission: Video Reference ID, Live Photo, and Location are left blank, as requested.</footer>
@@ -834,6 +888,110 @@ Vendor Team B\tcollector5@example.com\tI explained the capture app process and t
 // -------- State --------
 let currentRows = [];
 let currentDefaults = {};
+let currentPlan = [];   // currentRows + tracker match + sent status
+
+const $ = (id) => document.getElementById(id);
+
+// -------- Tracker data --------
+// The tracker form loads its dropdowns from this public Apps Script, which
+// allows cross-origin reads, so this page can resolve businesses itself.
+const MASTER_URL = 'https://script.google.com/macros/s/AKfycbw3RxM5jBjv_JiOa3VGSpRro2IEaBm79I3TnSLVfEsU4qbDVaos8yJ0OG3UCa62AVym2g/exec';
+const SUBMIT_URL = 'https://ita.indivillage.com/Only_Google_Sheet_Business_Feedback/submit.php';
+
+const master = { state: 'loading', rows: [], error: '' };
+let masterReady = Promise.resolve();
+
+const norm = (s) => String(s == null ? '' : s).trim().toLowerCase();
+const projOf = (r) => r['project name'] || r.project_name || '';
+const teamOf = (r) => r['vendor management team'] || r.vendor_team || '';
+const emailOf = (r) => r.emails || r.email || '';
+// Same value the tracker's own Business dropdown uses.
+const bizValueOf = (r) => {
+  const business = r.businees || r.business || r['business name'] || '';
+  const email = emailOf(r);
+  if (business && email) return `${business} [${email}]`;
+  if (business) return business;
+  return r['business name (email)'] || '';
+};
+
+function loadMaster() {
+  master.state = 'loading';
+  updateMasterStatus();
+  masterReady = fetch(MASTER_URL + '?nocache=' + Date.now())
+    .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(res => {
+      if (res && res.error) throw new Error(res.error);
+      const data = (res && res.data) || res;
+      if (!Array.isArray(data) || !data.length) throw new Error('the tracker sheet returned no rows');
+      master.rows = data;
+      master.state = 'ready';
+      fillCenterOptions();
+      fillProjectOptions();
+    })
+    .catch(e => { master.state = 'error'; master.error = e.message || String(e); })
+    .finally(() => {
+      updateMasterStatus();
+      if (!$('preview-card').hidden) renderPreview();
+    });
+  return masterReady;
+}
+
+function updateMasterStatus() {
+  const el = $('master-status');
+  if (master.state === 'loading') {
+    el.className = 'hint';
+    el.textContent = "Loading the tracker's business list…";
+  } else if (master.state === 'ready') {
+    el.className = 'hint ok';
+    el.textContent = `✓ Tracker business list loaded (${master.rows.length} businesses).`;
+  } else {
+    el.className = 'hint bad';
+    el.innerHTML = `Couldn't load the tracker's business list (${esc(master.error)}). <a href="#" id="master-retry">Retry</a>`;
+    $('master-retry').addEventListener('click', (e) => { e.preventDefault(); loadMaster(); });
+  }
+}
+
+function fillCenterOptions() {
+  const sel = $('center');
+  let cur = sel.value;
+  try { const saved = JSON.parse(localStorage.getItem('vvp-defaults') || 'null'); if (saved && saved.center) cur = saved.center; } catch (e) {}
+  const centers = [...new Set(master.rows.map(r => r.center).filter(Boolean))].sort();
+  if (!centers.length) return;
+  sel.innerHTML = centers.map(c => `<option>${esc(c)}</option>`).join('');
+  sel.value = centers.includes(cur) ? cur : centers[0];
+}
+
+function fillProjectOptions() {
+  const center = $('center').value;
+  const projects = [...new Set(master.rows.filter(r => r.center === center).map(projOf).filter(Boolean))].sort();
+  $('project-list').innerHTML = projects.map(p => `<option value="${esc(p)}"></option>`).join('');
+}
+
+// Find the tracker row for one feedback row. Team and project compare
+// case-insensitively; the tracker's own spelling is what gets submitted.
+function matchRow(row, center, project) {
+  if (master.state === 'loading') return { ok: false, wait: true, reason: 'Loading tracker list…' };
+  if (master.state !== 'ready') return { ok: false, reason: 'Tracker list unavailable' };
+  const inScope = master.rows.filter(r => r.center === center && norm(projOf(r)) === norm(project));
+  if (!inScope.length) return { ok: false, reason: `No "${project}" businesses at ${center}` };
+  const email = norm(row.email);
+  const sameTeam = inScope.filter(r => norm(teamOf(r)) === norm(row.vendor));
+  const hit = sameTeam.find(r => norm(emailOf(r)) === email);
+  if (hit) return { ok: true, team: teamOf(hit), project: projOf(hit), business: bizValueOf(hit) };
+  const other = inScope.find(r => norm(emailOf(r)) === email);
+  if (other) return { ok: false, reason: `Email is under team "${teamOf(other)}"` };
+  if (!sameTeam.length) return { ok: false, reason: 'Team not on tracker' };
+  return { ok: false, reason: 'Email not on tracker' };
+}
+
+// -------- Sent history (per browser) --------
+const SENT_KEY = 'vvp-sent';
+let sentSet = new Set();
+try { sentSet = new Set(JSON.parse(localStorage.getItem(SENT_KEY) || '[]')); } catch (e) {}
+const saveSent = () => { try { localStorage.setItem(SENT_KEY, JSON.stringify([...sentSet])); } catch (e) {} };
+const hashStr = (str) => { let h = 5381; for (let i = 0; i < str.length; i++) h = ((h << 5) + h + str.charCodeAt(i)) | 0; return (h >>> 0).toString(36); };
+const rowKey = (center, project, r) =>
+  [norm(center), norm(project), norm(r.vendor), norm(r.email), r.visit, hashStr(String(r.feedback).trim())].join('|');
 
 // -------- Preview rendering --------
 function renderPreview() {
@@ -866,7 +1024,14 @@ function renderPreview() {
   }
 
   const uniqueCollectors = new Set(rows.map(r => r.email)).size;
-  const includedCount = include.filter(Boolean).length;
+  currentPlan = rows.map(r => {
+    const match = matchRow(r, currentDefaults.center, currentDefaults.project);
+    const key = rowKey(currentDefaults.center, match.ok ? match.project : currentDefaults.project, r);
+    return { ...r, match, key, sent: sentSet.has(key) };
+  });
+  const readyCount = currentPlan.filter(p => p.match.ok && !p.sent).length;
+  const sentCount = currentPlan.filter(p => p.sent).length;
+  const badCount = currentPlan.filter(p => !p.match.ok && !p.match.wait).length;
 
   let html = '';
   if (errors.length) {
@@ -877,8 +1042,13 @@ function renderPreview() {
     <div class="stat"><div class="stat-value">${teams.length}</div><div class="stat-label">Teams</div></div>
     <div class="stat"><div class="stat-value">${uniqueCollectors}</div><div class="stat-label">Collectors</div></div>
     <div class="stat"><div class="stat-value">${rows.length}</div><div class="stat-label">Submissions</div></div>
-    <div class="stat"><div class="stat-value">${includedCount}/3</div><div class="stat-label">Visits included</div></div>
+    <div class="stat"><div class="stat-value">${readyCount}</div><div class="stat-label">Ready to push</div></div>
+    <div class="stat"><div class="stat-value">${sentCount}</div><div class="stat-label">Already sent</div></div>
+    <div class="stat"><div class="stat-value">${badCount}</div><div class="stat-label">Not on tracker</div></div>
   </div>`;
+  if (badCount) {
+    html += `<div class="notice warn">${badCount} row${badCount === 1 ? '' : 's'} can't be matched to a business on the tracker and will be skipped — see the Tracker column.</div>`;
+  }
 
   if (rows.length === 0) {
     html += `<div class="empty">Nothing to submit — toggle a visit above, or add feedback cells to the table.</div>`;
@@ -895,23 +1065,32 @@ function renderPreview() {
       <th>Collector</th>
       <th>Visit</th>
       <th>Feedback</th>
+      <th>Tracker</th>
     </tr></thead>
     <tbody>`;
 
+  // Problem rows first so they're visible without scrolling.
+  const order = currentPlan.map((p, i) => i)
+    .sort((a, b) => (currentPlan[a].match.ok ? 1 : 0) - (currentPlan[b].match.ok ? 1 : 0) || a - b);
   const maxShow = 60;
-  for (let i = 0; i < Math.min(rows.length, maxShow); i++) {
-    const r = rows[i];
+  for (let k = 0; k < Math.min(rows.length, maxShow); k++) {
+    const i = order[k];
+    const r = currentPlan[i];
+    const st = r.sent ? '<span class="st-sent">Already sent</span>'
+      : r.match.ok ? '<span class="st-ok">✓ Ready</span>'
+      : `<span class="${r.match.wait ? 'st-sent' : 'st-bad'}">${esc(r.match.reason)}</span>`;
     html += `<tr>
       <td>${i + 1}</td>
       <td>${esc(r.vendor)}</td>
       <td>${esc(r.email)}</td>
       <td><span class="visit-tag">${esc(r.visit)}</span></td>
       <td>${esc(r.feedback)}</td>
+      <td>${st}</td>
     </tr>`;
   }
 
   if (rows.length > maxShow) {
-    html += `<tr><td colspan="5" style="text-align:center;color:var(--fg-mute);font-style:italic">… and ${rows.length - maxShow} more rows</td></tr>`;
+    html += `<tr><td colspan="6" style="text-align:center;color:var(--fg-mute);font-style:italic">… and ${rows.length - maxShow} more rows</td></tr>`;
   }
 
   html += `</tbody></table></div>`;
@@ -919,7 +1098,201 @@ function renderPreview() {
   content.innerHTML = html;
   card.hidden = false;
   scriptCard.hidden = false;
+  if (!run.active && !run.countdown) {
+    setStatus(readyCount
+      ? `${readyCount} row${readyCount === 1 ? '' : 's'} ready to push.`
+      : master.state === 'loading' ? "Waiting for the tracker's business list…"
+      : 'Nothing new to push.', readyCount ? '' : 'warn');
+  }
 }
+
+// -------- Push runner --------
+const run = { active: false, cancel: false, countdown: null };
+
+function setStatus(text, kind) {
+  const el = $('push-status');
+  el.className = 'notice' + (kind ? ' ' + kind : '');
+  el.textContent = text;
+}
+
+function logLine(text, kind) {
+  const li = document.createElement('li');
+  if (kind) li.className = kind;
+  li.textContent = new Date().toLocaleTimeString() + '  ' + text;
+  const log = $('push-log');
+  log.appendChild(li);
+  log.scrollTop = log.scrollHeight;
+}
+
+function setRunning(on) {
+  run.active = on;
+  $('push-btn').disabled = on;
+  $('forget-btn').disabled = on;
+  $('stop-btn').hidden = !on && !run.countdown;
+  $('stop-btn').textContent = run.countdown ? 'Cancel' : 'Stop';
+}
+
+// Sleep that wakes early when Stop is clicked; onTick(msLeft) runs ~every second.
+function sleep(ms, onTick) {
+  return new Promise(resolve => {
+    const end = Date.now() + ms;
+    const tick = () => {
+      const left = end - Date.now();
+      if (run.cancel || left <= 0) return resolve();
+      if (onTick) onTick(left);
+      setTimeout(tick, Math.min(1000, left));
+    };
+    tick();
+  });
+}
+
+// "HH:MM" → next occurrence in local time (today, or tomorrow if already past).
+function nextTime(hhmm) {
+  if (!hhmm) return null;
+  const m = hhmm.match(/^(\d{1,2}):(\d{2})$/);
+  if (!m || +m[1] > 23 || +m[2] > 59) return 'invalid';
+  const d = new Date();
+  d.setHours(+m[1], +m[2], 0, 0);
+  if (d.getTime() <= Date.now()) d.setDate(d.getDate() + 1);
+  return d;
+}
+
+const fmtLeft = (ms) => {
+  const s = Math.ceil(ms / 1000), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
+  return h ? `${h}h ${m}m` : m ? `${m}m ${s % 60}s` : `${s % 60}s`;
+};
+
+async function submitOne(p, defaults) {
+  const fd = new FormData();
+  fd.append('center', defaults.center);
+  fd.append('project_name', p.match.project);
+  fd.append('vendor_team', p.match.team);
+  fd.append('business_name_email', p.match.business);
+  fd.append('visit_type', p.visit);
+  fd.append('videos_checked', defaults.videos_checked);
+  fd.append('video_ref_id', '');
+  fd.append('feedback', p.feedback);
+  fd.append('location_address', '');
+  fd.append('latitude', '');
+  fd.append('longitude', '');
+  // The tracker doesn't send CORS headers, so the response can't be read
+  // ("no-cors"); the request itself still reaches it. A network failure throws.
+  await fetch(SUBMIT_URL, { method: 'POST', body: fd, mode: 'no-cors' });
+}
+
+async function startPush() {
+  if (run.active) return;
+  cancelCountdown();
+  run.cancel = false;
+  setRunning(true);
+  try {
+    if (master.state === 'loading') {
+      setStatus("Waiting for the tracker's business list…");
+      await masterReady;
+    }
+    if (master.state !== 'ready') {
+      setStatus("Can't push: the tracker's business list didn't load. Use Retry above.", 'danger');
+      return;
+    }
+    renderPreview();
+    const defaults = { ...currentDefaults };
+    const gapMs = Math.round(Math.max(0, parseFloat($('gap').value) || 0) * 1000);
+    const schedule = { '1st Visit': $('t1').value.trim(), '2nd Visit': $('t2').value.trim(), '3rd Visit': $('t3').value.trim() };
+    const queue = currentPlan.filter(p => p.match.ok && !p.sent);
+    if (!queue.length) {
+      setStatus('Nothing new to push — every matched row was already sent from this browser.', 'warn');
+      return;
+    }
+
+    $('push-log').innerHTML = '';
+    logLine(`Starting: ${queue.length} submission${queue.length === 1 ? '' : 's'}, ${gapMs / 1000}s gap.`, 'info');
+    let ok = 0, fail = 0, done = 0;
+    const total = queue.length;
+
+    for (const visit of ['1st Visit', '2nd Visit', '3rd Visit']) {
+      const rows = queue.filter(p => p.visit === visit);
+      if (!rows.length || run.cancel) continue;
+
+      let at = nextTime(schedule[visit]);
+      if (at === 'invalid') { logLine(`${visit}: ignoring invalid time "${schedule[visit]}", sending now.`, 'bad'); at = null; }
+      if (at) {
+        logLine(`${visit}: waiting until ${at.toLocaleString()} (${rows.length} rows).`, 'info');
+        await sleep(at.getTime() - Date.now(), left =>
+          setStatus(`${visit} starts at ${at.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} — ${fmtLeft(left)} left. Keep this page open.`));
+        if (run.cancel) break;
+      }
+      logLine(`${visit}: sending ${rows.length} row${rows.length === 1 ? '' : 's'}.`, 'info');
+
+      for (let i = 0; i < rows.length && !run.cancel; i++) {
+        const p = rows[i];
+        done++;
+        const tag = `[${done}/${total}]`;
+        if (sentSet.has(p.key)) { logLine(`${tag} skipped duplicate ${p.email} · ${p.visit}`); continue; }
+        setStatus(`Sending ${tag} ${p.email} · ${p.visit}…`);
+        try {
+          await submitOne(p, defaults);
+          sentSet.add(p.key);
+          saveSent();
+          ok++;
+          logLine(`${tag} ✓ ${p.match.team} · ${p.email} · ${p.visit}`, 'ok');
+        } catch (e) {
+          fail++;
+          logLine(`${tag} ✗ ${p.email} · ${p.visit} — ${e.message || e}`, 'bad');
+        }
+        if (i < rows.length - 1 && gapMs > 0) {
+          await sleep(gapMs, left => setStatus(`Sent ${ok} of ${total}. Next in ${fmtLeft(left)}…`));
+        }
+      }
+    }
+
+    const left = total - ok - fail;
+    if (run.cancel) {
+      setStatus(`Stopped. Sent ${ok} of ${total}${fail ? `, ${fail} failed` : ''}. Push again to send the rest — sent rows are skipped.`, 'warn');
+      logLine(`Stopped by you. ${left} not sent.`, 'bad');
+    } else {
+      setStatus(`Done. Sent ${ok} of ${total}${fail ? ` — ${fail} failed (network error); push again to retry them` : ''}.`, fail ? 'danger' : 'ok');
+      logLine(`Done: ${ok} sent${fail ? `, ${fail} failed` : ''}.`, fail ? 'bad' : 'ok');
+    }
+  } finally {
+    setRunning(false);
+    const status = $('push-status').textContent, cls = $('push-status').className;
+    renderPreview();
+    $('push-status').textContent = status;
+    $('push-status').className = cls;
+  }
+}
+
+// Short countdown after a paste, so a wrong paste can still be cancelled.
+const AUTO_DELAY = 5;
+function startCountdown() {
+  cancelCountdown();
+  const ready = currentPlan.filter(p => p.match.ok && !p.sent).length;
+  if (master.state === 'ready' && !ready) return;  // renderPreview already explained why
+  let n = AUTO_DELAY;
+  const step = () => {
+    if (n <= 0) { run.countdown = null; startPush(); return; }
+    setStatus(`Pasted — pushing automatically in ${n}s. Click Cancel to stop.`);
+    n--;
+    run.countdown = setTimeout(step, 1000);
+  };
+  run.countdown = -1;
+  setRunning(false);
+  step();
+}
+
+function cancelCountdown() {
+  if (run.countdown) {
+    if (run.countdown !== -1) clearTimeout(run.countdown);
+    run.countdown = null;
+    setRunning(run.active);
+    return true;
+  }
+  return false;
+}
+
+window.addEventListener('beforeunload', (e) => {
+  if (run.active) { e.preventDefault(); e.returnValue = ''; }
+});
 
 // -------- Script builder --------
 function buildScript() {
@@ -1097,6 +1470,46 @@ function buildScript() {
 // -------- Events --------
 document.getElementById('parse-btn').addEventListener('click', renderPreview);
 
+$('push-btn').addEventListener('click', startPush);
+
+$('stop-btn').addEventListener('click', () => {
+  if (cancelCountdown()) { setStatus('Auto-push cancelled. Click Push now when ready.', 'warn'); return; }
+  if (run.active) { run.cancel = true; setStatus('Stopping…', 'warn'); }
+});
+
+$('forget-btn').addEventListener('click', () => {
+  if (!confirm('Forget which rows were already sent? Pushing the same table again will then send them again.')) return;
+  sentSet = new Set();
+  saveSent();
+  renderPreview();
+});
+
+// A pasted table replaces the box's contents, then pushes automatically.
+$('input').addEventListener('paste', (e) => {
+  const text = e.clipboardData && e.clipboardData.getData('text');
+  const looksLikeTable = text && /\t/.test(text) && /[\w.+-]+@[\w.-]+\.\w+/.test(text);
+  if (looksLikeTable) {
+    e.preventDefault();
+    $('input').value = text;
+    $('input').dispatchEvent(new Event('input'));
+  }
+  setTimeout(() => {
+    renderPreview();
+    if (looksLikeTable && $('autopush').checked && !run.active) startCountdown();
+  }, 0);
+});
+
+$('center').addEventListener('change', () => { if (master.state === 'ready') fillProjectOptions(); });
+
+(function () {
+  const KEY = 'vvp-autopush';
+  try { const v = localStorage.getItem(KEY); if (v != null) $('autopush').checked = v === '1'; } catch (e) {}
+  $('autopush').addEventListener('change', () => {
+    try { localStorage.setItem(KEY, $('autopush').checked ? '1' : '0'); } catch (e) {}
+    if (!$('autopush').checked && cancelCountdown()) setStatus('Auto-push cancelled.', 'warn');
+  });
+})();
+
 document.getElementById('sample-btn').addEventListener('click', () => {
   document.getElementById('input').value = SAMPLE;
   renderPreview();
@@ -1231,4 +1644,6 @@ document.getElementById('copy-btn').addEventListener('click', async () => {
     });
   });
 })();
+
+loadMaster();
 </script>
