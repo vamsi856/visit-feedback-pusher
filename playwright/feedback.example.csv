@@ -1,0 +1,3 @@
+center,project_name,vendor_team,business_name_email,visit_type,videos_checked,feedback
+Center Name,Project Name,Vendor Team Name,business@example.com,1st Visit,Yes,"What you actually told the business on this visit."
+Center Name,Project Name,Vendor Team Name,other-business@example.com,2nd Visit,No,"Second visit: camera angle fixed, asked them to keep hands in frame."

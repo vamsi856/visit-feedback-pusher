@@ -1,0 +1,1191 @@
+<title>Visit Feedback Pusher</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root {
+  /* Layout: single column — defaults, paste area, parsed preview, then the pushable script */
+
+  --bg: #f6f7fa;
+  --surface: #ffffff;
+  --surface-2: #eef1f6;
+  --border: #dde2eb;
+  --border-strong: #b7bfcc;
+  --fg: #0f1623;
+  --fg-dim: #475062;
+  --fg-mute: #7b8696;
+  --accent: #0b7a74;
+  --accent-hover: #086862;
+  --accent-fg: #ffffff;
+  --accent-soft: #d9ece9;
+  --success: #0d8449;
+  --warn: #a76500;
+  --warn-soft: #fbead1;
+  --danger: #a73131;
+  --danger-soft: #f6d8d8;
+
+  --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0a0f16;
+    --surface: #121a24;
+    --surface-2: #1b2535;
+    --border: #27344a;
+    --border-strong: #3f4e6a;
+    --fg: #e8edf5;
+    --fg-dim: #a9b4c5;
+    --fg-mute: #6f7d94;
+    --accent: #2cb2a9;
+    --accent-hover: #3cc4ba;
+    --accent-fg: #0a0f16;
+    --accent-soft: #0f2a28;
+    --success: #2eb878;
+    --warn: #dfa84c;
+    --warn-soft: #2d2415;
+    --danger: #e37171;
+    --danger-soft: #2d1818;
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #0a0f16;
+  --surface: #121a24;
+  --surface-2: #1b2535;
+  --border: #27344a;
+  --border-strong: #3f4e6a;
+  --fg: #e8edf5;
+  --fg-dim: #a9b4c5;
+  --fg-mute: #6f7d94;
+  --accent: #2cb2a9;
+  --accent-hover: #3cc4ba;
+  --accent-fg: #0a0f16;
+  --accent-soft: #0f2a28;
+  --success: #2eb878;
+  --warn: #dfa84c;
+  --warn-soft: #2d2415;
+  --danger: #e37171;
+  --danger-soft: #2d1818;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box }
+
+body {
+  font-family: var(--font-ui);
+  background: var(--bg);
+  color: var(--fg);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 56px;
+  line-height: 1.5;
+  font-size: 15px;
+  font-feature-settings: 'cv02', 'cv11';
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap {
+  max-width: 920px;
+  margin: 0 auto;
+}
+
+header.page {
+  margin-bottom: 28px;
+  position: relative;
+}
+
+.eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+h1 {
+  font-size: 30px;
+  font-weight: 700;
+  margin: 0 0 8px;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+  line-height: 1.15;
+}
+
+.sub {
+  color: var(--fg-dim);
+  font-size: 15px;
+  margin: 0;
+  max-width: 62ch;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px 22px;
+  margin-bottom: 14px;
+}
+
+.card h2 {
+  margin: 0 0 14px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--fg-mute);
+}
+
+.grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+}
+
+label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--fg-dim);
+  margin-bottom: 6px;
+  letter-spacing: 0.01em;
+}
+
+input[type="text"],
+select,
+textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 10px 12px;
+  background: var(--surface-2);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.4;
+  transition: border-color .12s, outline-color .12s;
+}
+
+input[type="text"]:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  border-color: transparent;
+}
+
+textarea {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  resize: vertical;
+  min-height: 170px;
+}
+
+.checks {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+  align-items: center;
+}
+
+.checks .lead {
+  font-size: 12px;
+  color: var(--fg-mute);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-weight: 500;
+  margin-right: 4px;
+}
+
+.check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--fg-dim);
+  cursor: pointer;
+  padding: 5px 10px;
+  background: var(--surface-2);
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  user-select: none;
+}
+
+.check input {
+  accent-color: var(--accent);
+  width: 15px;
+  height: 15px;
+  margin: 0;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 11px 18px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .14s, border-color .14s;
+  letter-spacing: 0.005em;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+
+.btn-primary:hover { background: var(--accent-hover) }
+.btn-primary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--fg-dim);
+  border-color: var(--border);
+}
+
+.btn-ghost:hover { background: var(--surface-2); color: var(--fg) }
+
+.actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+  align-items: center;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.stat {
+  padding: 12px 14px;
+  background: var(--surface-2);
+  border-radius: 7px;
+  border-left: 3px solid var(--accent);
+  min-width: 0;
+}
+
+.stat-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--fg);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.015em;
+  line-height: 1.1;
+}
+
+.stat-label {
+  font-size: 10.5px;
+  color: var(--fg-mute);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-top: 4px;
+  font-weight: 500;
+}
+
+.preview-wrap {
+  overflow: auto;
+  max-height: 360px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface-2);
+}
+
+table.preview {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+  font-family: var(--font-mono);
+}
+
+table.preview th {
+  background: var(--surface);
+  color: var(--fg-mute);
+  text-align: left;
+  padding: 9px 12px;
+  font-weight: 600;
+  font-family: var(--font-ui);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+table.preview td {
+  padding: 7px 12px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+  color: var(--fg-dim);
+}
+
+table.preview tr:last-child td { border-bottom: 0 }
+table.preview td:nth-child(1) { color: var(--fg-mute); text-align: right; font-variant-numeric: tabular-nums; width: 1%; }
+table.preview td:nth-child(2) { color: var(--fg); white-space: nowrap }
+table.preview td:nth-child(3) { white-space: nowrap }
+table.preview td:nth-child(4) { white-space: nowrap }
+table.preview td:nth-child(5) { max-width: 420px; min-width: 240px; }
+
+.visit-tag {
+  display: inline-block;
+  background: var(--accent-soft);
+  color: var(--accent);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+}
+
+.notice {
+  padding: 11px 14px;
+  border-radius: 7px;
+  font-size: 13px;
+  margin-bottom: 14px;
+  border-left: 3px solid var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.notice.warn {
+  background: var(--warn-soft);
+  color: var(--warn);
+  border-left-color: var(--warn);
+}
+
+.notice.danger {
+  background: var(--danger-soft);
+  color: var(--danger);
+  border-left-color: var(--danger);
+}
+
+ol.steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+  background: var(--surface-2);
+  border-radius: 7px;
+  border: 1px solid var(--border);
+}
+
+ol.steps li {
+  counter-increment: step;
+  padding: 12px 16px 12px 50px;
+  position: relative;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+  color: var(--fg-dim);
+}
+
+ol.steps li:last-child { border-bottom: 0 }
+
+ol.steps li::before {
+  content: counter(step);
+  position: absolute;
+  left: 14px;
+  top: 11px;
+  width: 24px;
+  height: 24px;
+  background: var(--accent);
+  color: var(--accent-fg);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+ol.steps li strong { color: var(--fg); font-weight: 600; }
+
+code {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  background: var(--surface);
+  color: var(--fg);
+  padding: 1.5px 6px;
+  border-radius: 3px;
+  border: 1px solid var(--border);
+}
+
+.copied {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--success);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+details.format {
+  margin-top: 14px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface-2);
+}
+
+details.format summary {
+  padding: 10px 14px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--fg-dim);
+  font-weight: 500;
+  list-style: none;
+  user-select: none;
+}
+
+details.format summary::-webkit-details-marker { display: none }
+
+details.format summary::before {
+  content: "▸";
+  display: inline-block;
+  margin-right: 8px;
+  color: var(--fg-mute);
+  transition: transform .15s;
+  font-size: 11px;
+}
+
+details.format[open] summary::before {
+  transform: rotate(90deg);
+}
+
+details.format .inside {
+  padding: 0 14px 14px;
+  font-size: 13px;
+  color: var(--fg-dim);
+}
+
+details.format pre {
+  background: var(--surface);
+  padding: 10px 12px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  overflow-x: auto;
+  font-size: 11.5px;
+  margin: 8px 0 0;
+  color: var(--fg-dim);
+  font-family: var(--font-mono);
+  line-height: 1.55;
+}
+
+.theme-toggle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--fg-dim);
+  border-radius: 20px;
+  padding: 6px 13px;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-weight: 500;
+}
+
+.theme-toggle:hover { color: var(--fg); background: var(--surface-2); }
+
+.empty {
+  text-align: center;
+  padding: 32px 20px;
+  color: var(--fg-mute);
+  font-size: 14px;
+}
+
+/* Lightweight icon */
+.ic {
+  width: 14px;
+  height: 14px;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+footer.note {
+  text-align: center;
+  color: var(--fg-mute);
+  font-size: 12px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+</style>
+
+<div class="wrap">
+  <header class="page">
+    <button class="theme-toggle" id="theme-toggle">◐ Theme</button>
+    <div class="eyebrow">Vendor Visit Tracker</div>
+    <h1>Visit Feedback Pusher</h1>
+    <p class="sub">Paste a TSV with the team name in the first column — exactly what you get copying from your sheet. Review the parsed rows, set timing if you want, then copy the script and run it in the tracker's browser console to push every row.</p>
+  </header>
+
+  <div class="card">
+    <h2>Defaults</h2>
+    <div class="grid">
+      <div>
+        <label for="center">Center</label>
+        <select id="center">
+          <option>ADN</option>
+          <option>ATP</option>
+          <option>BGK</option>
+          <option selected>KNL</option>
+          <option>NLR</option>
+          <option>RCR</option>
+          <option>YGR</option>
+        </select>
+      </div>
+      <div>
+        <label for="project">Project name</label>
+        <input id="project" type="text" value="Supernova" autocomplete="off">
+      </div>
+      <div>
+        <label for="videos">Recorded videos checked?</label>
+        <select id="videos">
+          <option selected>Yes</option>
+          <option>No</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Paste the feedback table</h2>
+    <textarea id="input" spellcheck="false" placeholder="Paste a TSV with the team name in the first column, then collector email, then 1st / 2nd / 3rd visit feedback. One row per collector. Blank cells are skipped.
+
+Vendor Team	Collector email	1st visit feedback	2nd visit feedback	3rd visit feedback
+Vendor Team A	collector1@example.com	I introduced the recording guidelines...	I checked the recording process...	I followed up on earlier instructions...
+Vendor Team A	collector2@example.com	I explained the approved placement...	I checked the camera angle...	I reviewed the position again..."></textarea>
+
+    <div class="checks">
+      <span class="lead">Include visits</span>
+      <label class="check"><input type="checkbox" id="v1" checked> 1st</label>
+      <label class="check"><input type="checkbox" id="v2" checked> 2nd</label>
+      <label class="check"><input type="checkbox" id="v3" checked> 3rd</label>
+    </div>
+
+    <details class="format">
+      <summary>Format details</summary>
+      <div class="inside">
+        <p style="margin:6px 0 0"><strong>Tab-separated, team in the first column.</strong> Columns in order: team name, collector email, 1st visit feedback, 2nd visit feedback, 3rd visit feedback. One row per collector; the team name repeats on each row and groups them. The first header row (mentioning <em>Collector email</em> or <em>visit feedback</em>) is ignored. Blank feedback cells are skipped. Use <em>Upload</em> to open a <code>.tsv</code> or <code>.csv</code> file directly.</p>
+        <pre>Vendor Team    Collector email    1st visit feedback    2nd visit feedback    3rd visit feedback
+Vendor Team A    collector1@example.com    I introduced the guidelines...    I checked the recording process...    I followed up on earlier instructions...
+Vendor Team A    collector2@example.com    I explained the placement...    I checked the camera angle...    I reviewed the position again...
+Vendor Team B    collector4@example.com    I demonstrated the setup...    I checked the camera position...    I reviewed the recording again...
+Vendor Team B    collector5@example.com    I explained the capture app...    I reviewed the restart process...    I followed up on app instructions...</pre>
+      </div>
+    </details>
+
+    <div class="actions">
+      <button class="btn btn-primary" id="parse-btn">Parse table</button>
+      <button class="btn btn-ghost" id="upload-btn">Upload .tsv / .csv</button>
+      <button class="btn btn-ghost" id="sample-btn">Load sample</button>
+      <button class="btn btn-ghost" id="clear-btn">Clear</button>
+      <input id="file-input" type="file" accept=".tsv,.csv,.txt,text/plain,text/tab-separated-values,text/csv" hidden>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Timing</h2>
+    <div class="grid">
+      <div>
+        <label for="gap">Gap between submissions (seconds)</label>
+        <input id="gap" type="text" value="10" inputmode="numeric" autocomplete="off">
+      </div>
+      <div>
+        <label for="t1">1st visit — run at (HH:MM, blank = now)</label>
+        <input id="t1" type="text" placeholder="e.g. 09:00" autocomplete="off">
+      </div>
+      <div>
+        <label for="t2">2nd visit — run at</label>
+        <input id="t2" type="text" placeholder="e.g. 13:00" autocomplete="off">
+      </div>
+      <div>
+        <label for="t3">3rd visit — run at</label>
+        <input id="t3" type="text" placeholder="e.g. 17:00" autocomplete="off">
+      </div>
+    </div>
+    <p style="margin:14px 0 0;color:var(--fg-mute);font-size:12.5px;line-height:1.55">Times are in your browser's local clock, 24-hour. Leave a visit blank to send it as soon as the script runs. The tracker tab must stay open through all scheduled times — the script sits in its console and waits.</p>
+  </div>
+
+  <div class="card" id="preview-card" hidden>
+    <h2>Preview</h2>
+    <div id="preview-content"></div>
+  </div>
+
+  <div class="card" id="script-card" hidden>
+    <h2>Submit</h2>
+    <div class="notice" style="margin-bottom:16px">This page can't POST to the tracker directly — the browser blocks cross-origin submissions. The submit button below copies a ready-to-run script that you paste once into the tracker's own console, where the browser does allow it.</div>
+    <ol class="steps">
+      <li>Open the tracker in Chrome at <code>ita.indivillage.com/Only_Google_Sheet_Business_Feedback/</code> (any page on that host works).</li>
+      <li>Open the browser console. Windows: press <strong>F12</strong>. Mac: press <strong>⌥ ⌘ J</strong>. Click the <strong>Console</strong> tab.</li>
+      <li>Click <strong>Submit all</strong> below, switch to the tracker tab, paste in the console and press <strong>Enter</strong>.</li>
+      <li>The script loads each team's business list, then runs the submissions — waiting for any scheduled times you set and the gap between submissions. Keep the tab open the whole time. Watch the console for live progress and a final count.</li>
+    </ol>
+
+    <div class="actions">
+      <button class="btn btn-primary" id="copy-btn">Submit all — copy run script</button>
+      <span id="copy-feedback" hidden class="copied">✓ Copied — now paste in the tracker console</span>
+    </div>
+  </div>
+
+  <footer class="note">Form settings applied to every submission: Video Reference ID, Live Photo, and Location are left blank, as requested.</footer>
+</div>
+
+<script>
+// -------- Theme toggle (per-viewer convenience) --------
+(function() {
+  const btn = document.getElementById('theme-toggle');
+  const KEY = 'vvp-theme';
+  try {
+    const saved = localStorage.getItem(KEY);
+    if (saved === 'dark' || saved === 'light') {
+      document.documentElement.setAttribute('data-theme', saved);
+    }
+  } catch (e) {}
+  btn.addEventListener('click', () => {
+    const cur = document.documentElement.getAttribute('data-theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    let next;
+    if (cur === 'dark') next = 'light';
+    else if (cur === 'light') next = 'dark';
+    else next = prefersDark ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    try { localStorage.setItem(KEY, next); } catch (e) {}
+  });
+})();
+
+// -------- Flexible parser — figures out the shape of the input --------
+function parseTable(text) {
+  const errors = [];
+  const teams = [];
+  let currentTeam = null;
+
+  const EMAIL_RE = /[\w.+-]+@[\w.-]+\.[\w.-]+/;
+  const HEADER_RE = /\b(collector\s*email|email\s*address|1st\s*visit|2nd\s*visit|3rd\s*visit|first\s*visit|second\s*visit|third\s*visit|visit\s*feedback)\b/i;
+
+  // Strip markdown table alignment rows like |---|---|
+  const lines = text.split(/\r?\n/).map(line => {
+    if (/^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)+\|?\s*$/.test(line)) return '';
+    return line;
+  });
+
+  // Detect the separator from the first email-bearing line
+  let separator = 'none';
+  for (const line of lines) {
+    if (!EMAIL_RE.test(line)) continue;
+    if (line.includes('\t')) separator = 'tab';
+    else if (/^\s*\|.*\|/.test(line) || /\s\|\s/.test(line)) separator = 'pipe';
+    else if (/ {2,}/.test(line)) separator = 'spaces';
+    else {
+      const afterEmail = line.replace(EMAIL_RE, '').trim();
+      if ((afterEmail.match(/,/g) || []).length >= 1) separator = 'comma';
+    }
+    break;
+  }
+
+  const splitRow = (line) => {
+    if (separator === 'tab') return line.split('\t').map(p => p.trim());
+    if (separator === 'pipe') return line.replace(/^\s*\|/, '').replace(/\|\s*$/, '').split('|').map(p => p.trim());
+    if (separator === 'spaces') return line.split(/ {2,}|\t+/).map(p => p.trim());
+    if (separator === 'comma') return line.split(',').map(p => p.trim());
+    return [line.trim()];
+  };
+
+  const cleanTeamName = (s) => {
+    let name = s.trim();
+    name = name.replace(/^#{1,6}\s+/, '');
+    name = name.replace(/^\*{1,3}(.+?)\*{1,3}$/, '$1');
+    name = name.replace(/^_{1,3}(.+?)_{1,3}$/, '$1');
+    name = name.replace(/^\d+[\.\)]\s+/, '');
+    name = name.replace(/^(?:team|vendor\s+team|vendor|group)\s*[:\-]\s*/i, '');
+    name = name.replace(/[:\-]+\s*$/, '');
+    return name.trim();
+  };
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+
+    // Skip header rows that mention "collector email" / "visit feedback"
+    if (!EMAIL_RE.test(trimmed) && HEADER_RE.test(trimmed)) continue;
+
+    // Data row — contains an email
+    if (EMAIL_RE.test(trimmed)) {
+      const parts = splitRow(line);
+      let emailIdx = parts.findIndex(p => EMAIL_RE.test(p));
+      let email;
+      if (emailIdx >= 0) {
+        email = parts[emailIdx].match(EMAIL_RE)[0];
+      } else {
+        email = trimmed.match(EMAIL_RE)[0];
+        emailIdx = 0;
+      }
+
+      // TSV/CSV with team in a column before the email: use the first
+      // non-empty cell before the email as the team name for this row.
+      if (emailIdx > 0) {
+        let inlineTeam = null;
+        for (let j = 0; j < emailIdx; j++) {
+          if (parts[j]) { inlineTeam = parts[j]; break; }
+        }
+        if (inlineTeam) {
+          const name = cleanTeamName(inlineTeam);
+          if (name && (!currentTeam || currentTeam.name !== name)) {
+            currentTeam = { name, rows: [] };
+            teams.push(currentTeam);
+          }
+        }
+      }
+
+      if (!currentTeam) {
+        currentTeam = { name: '(unspecified team)', rows: [] };
+        teams.push(currentTeam);
+      }
+
+      const feedback = parts.slice(emailIdx + 1);
+      currentTeam.rows.push({
+        email,
+        v1: feedback[0] || '',
+        v2: feedback[1] || '',
+        v3: feedback[2] || '',
+      });
+      continue;
+    }
+
+    // Non-email, non-header line → treat as a team name
+    const name = cleanTeamName(trimmed);
+    if (name) {
+      currentTeam = { name, rows: [] };
+      teams.push(currentTeam);
+    }
+  }
+
+  // Drop empty teams at the ends
+  if (teams.length && teams[0].rows.length === 0 && teams[0].name === '(unspecified team)') {
+    teams.shift();
+  }
+  while (teams.length && teams[teams.length - 1].rows.length === 0) {
+    teams.pop();
+  }
+
+  if (!teams.length) {
+    errors.push('No submissions detected. Make sure each data row has a collector email.');
+  }
+
+  return { teams, errors };
+}
+
+function flatten(teams, include) {
+  const out = [];
+  for (const t of teams) {
+    for (const r of t.rows) {
+      if (include[0] && r.v1) out.push({ vendor: t.name, email: r.email, visit: '1st Visit', feedback: r.v1 });
+      if (include[1] && r.v2) out.push({ vendor: t.name, email: r.email, visit: '2nd Visit', feedback: r.v2 });
+      if (include[2] && r.v3) out.push({ vendor: t.name, email: r.email, visit: '3rd Visit', feedback: r.v3 });
+    }
+  }
+  return out;
+}
+
+function esc(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+// -------- Sample --------
+const SAMPLE = `Vendor Team\tCollector email\t1st visit feedback\t2nd visit feedback\t3rd visit feedback
+Vendor Team A\tcollector1@example.com\tI introduced the recording guidelines and demonstrated the correct head-mounted camera position for aluminium factory work.\tI checked the recording process and discussed pauses during the activity.\tI followed up on the earlier instructions and checked the camera setup again.
+Vendor Team A\tcollector2@example.com\tI explained the approved camera placement and demonstrated how to secure the head mount before starting factory work.\tI checked the camera angle and advised the collector to make adjustments before recording.\tI reviewed the camera position again and reminded the collector to maintain stable recording.
+Vendor Team A\tcollector3@example.com\tI explained the capture app process and the requirement to use only a head-mounted camera.\tI reviewed the recording process after an interruption.\tI followed up on the app instructions and reminded the collector to confirm the recording timer is running.
+Vendor Team B\tcollector4@example.com\tI demonstrated the correct head-mounted camera placement for steel cooker manufacturing.\tI checked the camera position during manufacturing.\tI reviewed the manufacturing recording again and reminded the collector to maintain a stable camera position.
+Vendor Team B\tcollector5@example.com\tI explained the capture app process and the recording start sequence.\tI reviewed how to restart correctly if the app stops during work.\tI followed up on recording restarts and verified the app resumes correctly.`;
+
+// -------- State --------
+let currentRows = [];
+let currentDefaults = {};
+
+// -------- Preview rendering --------
+function renderPreview() {
+  const text = document.getElementById('input').value;
+  const include = [
+    document.getElementById('v1').checked,
+    document.getElementById('v2').checked,
+    document.getElementById('v3').checked,
+  ];
+
+  const { teams, errors } = parseTable(text);
+  const rows = flatten(teams, include);
+  currentRows = rows;
+  currentDefaults = {
+    center: document.getElementById('center').value,
+    project: document.getElementById('project').value.trim(),
+    videos_checked: document.getElementById('videos').value,
+  };
+
+  const card = document.getElementById('preview-card');
+  const scriptCard = document.getElementById('script-card');
+  const content = document.getElementById('preview-content');
+
+  if (!teams.length) {
+    card.hidden = false;
+    scriptCard.hidden = true;
+    content.innerHTML = `<div class="notice danger">${esc(errors[0] || 'Nothing parsed yet.')}</div>
+      <div class="empty">Paste a table above or load the sample to try it out.</div>`;
+    return;
+  }
+
+  const uniqueCollectors = new Set(rows.map(r => r.email)).size;
+  const includedCount = include.filter(Boolean).length;
+
+  let html = '';
+  if (errors.length) {
+    html += `<div class="notice warn">${esc(errors.join(' '))}</div>`;
+  }
+
+  html += `<div class="stats">
+    <div class="stat"><div class="stat-value">${teams.length}</div><div class="stat-label">Teams</div></div>
+    <div class="stat"><div class="stat-value">${uniqueCollectors}</div><div class="stat-label">Collectors</div></div>
+    <div class="stat"><div class="stat-value">${rows.length}</div><div class="stat-label">Submissions</div></div>
+    <div class="stat"><div class="stat-value">${includedCount}/3</div><div class="stat-label">Visits included</div></div>
+  </div>`;
+
+  if (rows.length === 0) {
+    html += `<div class="empty">Nothing to submit — toggle a visit above, or add feedback cells to the table.</div>`;
+    content.innerHTML = html;
+    card.hidden = false;
+    scriptCard.hidden = true;
+    return;
+  }
+
+  html += `<div class="preview-wrap"><table class="preview">
+    <thead><tr>
+      <th>#</th>
+      <th>Vendor team</th>
+      <th>Collector</th>
+      <th>Visit</th>
+      <th>Feedback</th>
+    </tr></thead>
+    <tbody>`;
+
+  const maxShow = 60;
+  for (let i = 0; i < Math.min(rows.length, maxShow); i++) {
+    const r = rows[i];
+    html += `<tr>
+      <td>${i + 1}</td>
+      <td>${esc(r.vendor)}</td>
+      <td>${esc(r.email)}</td>
+      <td><span class="visit-tag">${esc(r.visit)}</span></td>
+      <td>${esc(r.feedback)}</td>
+    </tr>`;
+  }
+
+  if (rows.length > maxShow) {
+    html += `<tr><td colspan="5" style="text-align:center;color:var(--fg-mute);font-style:italic">… and ${rows.length - maxShow} more rows</td></tr>`;
+  }
+
+  html += `</tbody></table></div>`;
+
+  content.innerHTML = html;
+  card.hidden = false;
+  scriptCard.hidden = false;
+}
+
+// -------- Script builder --------
+function buildScript() {
+  const gapSec = Math.max(0, parseFloat(document.getElementById('gap').value) || 0);
+  const payload = {
+    center: currentDefaults.center,
+    project: currentDefaults.project,
+    videos: currentDefaults.videos_checked,
+    gap: gapSec,
+    schedule: {
+      '1st Visit': document.getElementById('t1').value.trim(),
+      '2nd Visit': document.getElementById('t2').value.trim(),
+      '3rd Visit': document.getElementById('t3').value.trim(),
+    },
+    rows: currentRows.map(r => [r.vendor, r.email, r.visit, r.feedback]),
+  };
+
+  const data = JSON.stringify(payload);
+
+  // Note: the body of this script runs inside the tracker site, same-origin, so fetch works.
+  return `/* Visit Feedback Pusher — paste this in the tracker's browser console */
+(async () => {
+  const D = ${data};
+  if (!location.href.includes('ita.indivillage.com')) {
+    console.log('%cOpen the Vendor Visit Tracker (ita.indivillage.com) first, then run this script.', 'color:#b23b3b;font-weight:bold');
+    return;
+  }
+  const log = (m, c) => console.log('%c' + m, 'color:' + (c || '#0b7a74') + ';font-weight:600');
+  const err = (m) => console.log('%c' + m, 'color:#b23b3b;font-weight:600');
+  const wait = (ms) => new Promise(r => setTimeout(r, ms));
+
+  // Parse "HH:MM" into today's local time, rolling to tomorrow if already past.
+  const nextTime = (hhmm) => {
+    if (!hhmm) return null;
+    const m = hhmm.match(/^(\\d{1,2}):(\\d{2})$/);
+    if (!m) { err('Ignoring invalid time: ' + hhmm); return null; }
+    const d = new Date();
+    d.setHours(parseInt(m[1], 10), parseInt(m[2], 10), 0, 0);
+    if (d.getTime() <= Date.now()) d.setDate(d.getDate() + 1);
+    return d;
+  };
+
+  const waitUntil = async (target, label) => {
+    while (true) {
+      const diff = target.getTime() - Date.now();
+      if (diff <= 0) return;
+      const mins = Math.floor(diff / 60000);
+      const secs = Math.floor((diff % 60000) / 1000);
+      log('  ' + label + ' — waiting ' + mins + 'm ' + secs + 's (until ' + target.toLocaleTimeString() + ')');
+      await wait(Math.min(diff, 60000));
+    }
+  };
+
+  log('Visit Feedback Pusher — starting (' + D.rows.length + ' submissions, ' + D.gap + 's gap)');
+
+  const setSel = (name, value) => {
+    const el = document.querySelector('select[name="' + name + '"], input[name="' + name + '"]');
+    if (!el) return false;
+    el.value = value;
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+    return true;
+  };
+
+  if (!setSel('center', D.center))  { err('Center dropdown not found. Open the form page (index.php) first.'); return; }
+  await wait(900);
+  if (!setSel('project_name', D.project)) { err('Project dropdown not found.'); return; }
+  await wait(1400);
+
+  // Build business lookup by iterating vendor teams
+  const teams = [...new Set(D.rows.map(r => r[0]))];
+  const bizByEmail = {};
+  log('Loading business lists for ' + teams.length + ' teams…');
+
+  for (const team of teams) {
+    const vt = document.querySelector('select[name="vendor_team"]');
+    if (!vt) { err('Vendor team dropdown not found.'); return; }
+    const hasOption = [...vt.options].some(o => o.value === team);
+    if (!hasOption) { err('  Vendor team "' + team + '" not in dropdown — skipping its rows'); continue; }
+    vt.value = team;
+    vt.dispatchEvent(new Event('change', { bubbles: true }));
+    await wait(1700);
+
+    const bizEl = document.querySelector('select[name="business_name_email"]');
+    if (!bizEl) { err('Business dropdown not found.'); return; }
+    let count = 0;
+    for (const opt of bizEl.options) {
+      if (!opt.value) continue;
+      const m = opt.value.match(/\\[([^\\]]+)\\]/);
+      if (m) { bizByEmail[m[1].toLowerCase()] = opt.value; count++; }
+    }
+    log('  ' + team + ' → ' + count + ' businesses');
+  }
+
+  const submitOne = async (vendor, business, visit, feedback) => {
+    const fd = new FormData();
+    fd.append('center', D.center);
+    fd.append('project_name', D.project);
+    fd.append('vendor_team', vendor);
+    fd.append('business_name_email', business);
+    fd.append('visit_type', visit);
+    fd.append('videos_checked', D.videos);
+    fd.append('video_ref_id', '');
+    fd.append('feedback', feedback);
+    fd.append('location_address', '');
+    fd.append('latitude', '');
+    fd.append('longitude', '');
+    const res = await fetch('/Only_Google_Sheet_Business_Feedback/submit.php', { method: 'POST', body: fd });
+    return res.status;
+  };
+
+  // Group rows by visit, preserving order within each visit
+  const byVisit = { '1st Visit': [], '2nd Visit': [], '3rd Visit': [] };
+  for (const r of D.rows) {
+    if (byVisit[r[2]]) byVisit[r[2]].push(r);
+  }
+
+  let ok = 0, fail = 0;
+  const missing = [];
+  const gapMs = Math.round((D.gap || 0) * 1000);
+  const total = D.rows.length;
+  let doneCount = 0;
+
+  for (const visit of ['1st Visit', '2nd Visit', '3rd Visit']) {
+    const rows = byVisit[visit];
+    if (!rows.length) continue;
+
+    const scheduledFor = nextTime(D.schedule[visit]);
+    if (scheduledFor) {
+      log('── ' + visit + ' — scheduled for ' + scheduledFor.toLocaleString() + ' (' + rows.length + ' submissions)');
+      await waitUntil(scheduledFor, visit);
+    } else {
+      log('── ' + visit + ' — running now (' + rows.length + ' submissions)');
+    }
+
+    for (let i = 0; i < rows.length; i++) {
+      const [vendor, email, v, feedback] = rows[i];
+      const biz = bizByEmail[email.toLowerCase()];
+      doneCount++;
+      const tag = '[' + doneCount + '/' + total + ']';
+      if (!biz) {
+        missing.push(email + '  (' + vendor + ')');
+        fail++;
+        err('  ' + tag + ' ✗ ' + email + ' · ' + v + ' — business not found on tracker');
+        continue;
+      }
+      try {
+        const status = await submitOne(vendor, biz, v, feedback);
+        if (status === 200) {
+          ok++;
+          console.log('  ' + tag + ' ✓ ' + email + ' · ' + v);
+        } else {
+          fail++;
+          err('  ' + tag + ' ✗ ' + email + ' · ' + v + ' (status ' + status + ')');
+        }
+      } catch (e) {
+        fail++;
+        err('  ' + tag + ' ✗ ' + email + ' · ' + v + ' — ' + e.message);
+      }
+      if (i < rows.length - 1 && gapMs > 0) {
+        await wait(gapMs);
+      }
+    }
+  }
+
+  console.log('%c\\n═══ Done ═══', 'font-weight:bold;color:#0b7a74;font-size:13px');
+  log('Submitted: ' + ok + ' of ' + D.rows.length, '#0d8449');
+  if (fail) err('Failed: ' + fail);
+  if (missing.length) {
+    err('Collector emails without a matching business on the tracker:');
+    missing.forEach(m => console.log('    ' + m));
+  }
+})();`;
+}
+
+// -------- Events --------
+document.getElementById('parse-btn').addEventListener('click', renderPreview);
+
+document.getElementById('sample-btn').addEventListener('click', () => {
+  document.getElementById('input').value = SAMPLE;
+  renderPreview();
+});
+
+document.getElementById('clear-btn').addEventListener('click', () => {
+  document.getElementById('input').value = '';
+  document.getElementById('preview-card').hidden = true;
+  document.getElementById('script-card').hidden = true;
+  try { localStorage.removeItem('vvp-draft'); } catch (e) {}
+});
+
+document.getElementById('upload-btn').addEventListener('click', () => {
+  document.getElementById('file-input').click();
+});
+
+document.getElementById('file-input').addEventListener('change', (e) => {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const text = ev.target.result;
+    document.getElementById('input').value = text;
+    try { localStorage.setItem('vvp-draft', text); } catch (err) {}
+    renderPreview();
+  };
+  reader.onerror = () => alert('Could not read ' + file.name);
+  reader.readAsText(file);
+  e.target.value = '';
+});
+
+['center', 'project', 'videos', 'v1', 'v2', 'v3', 'gap', 't1', 't2', 't3'].forEach(id => {
+  const el = document.getElementById(id);
+  el.addEventListener('change', () => {
+    if (!document.getElementById('preview-card').hidden) renderPreview();
+  });
+  el.addEventListener('input', () => {
+    if (!document.getElementById('preview-card').hidden) renderPreview();
+  });
+});
+
+document.getElementById('copy-btn').addEventListener('click', async () => {
+  const script = buildScript();
+  let copied = false;
+  try {
+    await navigator.clipboard.writeText(script);
+    copied = true;
+  } catch (e) {
+    const ta = document.createElement('textarea');
+    ta.value = script;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try { copied = document.execCommand('copy'); } catch (_) {}
+    document.body.removeChild(ta);
+  }
+  const fb = document.getElementById('copy-feedback');
+  fb.textContent = copied ? '✓ Copied — paste it in the tracker console' : '⚠ Could not copy — select the script below';
+  fb.hidden = false;
+  setTimeout(() => { fb.hidden = true; }, 4000);
+});
+
+// -------- Draft persistence (per-viewer) --------
+(function() {
+  const KEY = 'vvp-draft';
+  const inp = document.getElementById('input');
+  try {
+    const s = localStorage.getItem(KEY);
+    if (s && !inp.value) inp.value = s;
+  } catch (e) {}
+  let t;
+  inp.addEventListener('input', () => {
+    clearTimeout(t);
+    t = setTimeout(() => {
+      try { localStorage.setItem(KEY, inp.value); } catch (e) {}
+    }, 300);
+  });
+})();
+
+// -------- Also persist default choices --------
+(function() {
+  const fields = ['center', 'project', 'videos', 'gap', 't1', 't2', 't3'];
+  const KEY = 'vvp-defaults';
+  try {
+    const saved = JSON.parse(localStorage.getItem(KEY) || 'null');
+    if (saved) {
+      for (const f of fields) {
+        if (saved[f] != null) document.getElementById(f).value = saved[f];
+      }
+    }
+  } catch (e) {}
+  fields.forEach(f => {
+    document.getElementById(f).addEventListener('change', () => {
+      try {
+        const now = {};
+        fields.forEach(k => now[k] = document.getElementById(k).value);
+        localStorage.setItem(KEY, JSON.stringify(now));
+      } catch (e) {}
+    });
+  });
+})();
+</script>

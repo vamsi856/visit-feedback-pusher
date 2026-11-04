@@ -1,0 +1,16 @@
+{
+  "name": "visit-feedback-pusher",
+  "version": "1.0.0",
+  "description": "Fills the vendor/project visit feedback form from a CSV of real visit feedback, using Playwright.",
+  "main": "push.js",
+  "scripts": {
+    "setup": "npx playwright install chromium",
+    "dry": "node push.js feedback.csv",
+    "push": "node push.js feedback.csv --submit"
+  },
+  "dependencies": {
+    "csv-parse": "5.5.6",
+    "playwright": "1.48.2"
+  },
+  "license": "MIT"
+}

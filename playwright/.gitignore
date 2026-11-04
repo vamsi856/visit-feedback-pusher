@@ -1,0 +1,5 @@
+node_modules/
+feedback.csv
+done.json
+screenshots/
+.env
