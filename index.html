@@ -630,17 +630,28 @@ Vendor Team B    collector5@example.com    I explained the capture app...    I r
   </div>
 
   <div class="card" id="script-card" hidden>
-    <h2>Submit</h2>
-    <div class="notice" style="margin-bottom:16px">This page can't POST to the tracker directly — the browser blocks cross-origin submissions. The submit button below copies a ready-to-run script that you paste once into the tracker's own console, where the browser does allow it.</div>
+    <h2>Send</h2>
+    <ol class="steps">
+      <li>One time only: drag this button to your bookmarks bar → <a class="btn btn-ghost" id="bookmarklet" href="#" title="Drag me to the bookmarks bar">Send feedback</a></li>
+      <li>Press <strong>Send now</strong>. The tracker form opens in a new tab with your rows.</li>
+      <li>In that tab, click the <strong>Send feedback</strong> bookmark. A panel shows each row being sent and a final count. Keep the tab open until it says Done.</li>
+    </ol>
+    <div class="actions">
+      <button class="btn btn-primary" id="send-btn">Send now</button>
+      <span id="send-feedback" hidden class="copied"></span>
+    </div>
+    <p style="margin:14px 0 0;color:var(--fg-mute);font-size:12.5px;line-height:1.55">This sends right away and ignores the scheduled times. The tracker won't take submissions from this page directly, so the bookmark does the sending from the tracker's own tab. Rows already sent from that browser are skipped if you click twice.</p>
+
+    <h2 style="margin-top:28px">Or: console script</h2>
     <ol class="steps">
       <li>Open the tracker in Chrome at <code>ita.indivillage.com/Only_Google_Sheet_Business_Feedback/</code> (any page on that host works).</li>
       <li>Open the browser console. Windows: press <strong>F12</strong>. Mac: press <strong>⌥ ⌘ J</strong>. Click the <strong>Console</strong> tab.</li>
-      <li>Click <strong>Submit all</strong> below, switch to the tracker tab, paste in the console and press <strong>Enter</strong>.</li>
+      <li>Click <strong>Copy console script</strong> below, switch to the tracker tab, paste in the console and press <strong>Enter</strong>.</li>
       <li>The script loads each team's business list, then runs the submissions — waiting for any scheduled times you set and the gap between submissions. Keep the tab open the whole time. Watch the console for live progress and a final count.</li>
     </ol>
 
     <div class="actions">
-      <button class="btn btn-primary" id="copy-btn">Submit all — copy run script</button>
+      <button class="btn btn-ghost" id="copy-btn">Copy console script</button>
       <span id="copy-feedback" hidden class="copied">✓ Copied — now paste in the tracker console</span>
     </div>
   </div>
@@ -1125,6 +1136,38 @@ document.getElementById('file-input').addEventListener('change', (e) => {
   el.addEventListener('input', () => {
     if (!document.getElementById('preview-card').hidden) renderPreview();
   });
+});
+
+// -------- One-click send: rows go to the tracker tab in the URL hash; the bookmark sends them --------
+const TRACKER_URL = 'https://ita.indivillage.com/Only_Google_Sheet_Business_Feedback/index.php';
+document.getElementById('bookmarklet').href =
+  "javascript:(function(){var s=document.createElement('script');s.src='" +
+  new URL('send.js', location.href).href +
+  "?t='+Date.now();document.body.appendChild(s);})();";
+document.getElementById('bookmarklet').addEventListener('click', (e) => {
+  e.preventDefault();
+  alert('Drag this button to your bookmarks bar, then click it on the tracker tab.');
+});
+
+document.getElementById('send-btn').addEventListener('click', () => {
+  const fb = document.getElementById('send-feedback');
+  if (!currentRows.length) {
+    fb.textContent = '⚠ Nothing to send. Parse a table first.';
+    fb.hidden = false;
+    return;
+  }
+  const payload = {
+    center: currentDefaults.center,
+    project: currentDefaults.project,
+    videos: currentDefaults.videos_checked,
+    gap: Math.max(0, parseFloat(document.getElementById('gap').value) || 0),
+    rows: currentRows.map(r => [r.vendor, r.email, r.visit, r.feedback]),
+  };
+  const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(payload))))
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  window.open(TRACKER_URL + '#vfp=' + b64, '_blank');
+  fb.textContent = '✓ Tracker opened with ' + currentRows.length + ' rows. Click the Send feedback bookmark there.';
+  fb.hidden = false;
 });
 
 document.getElementById('copy-btn').addEventListener('click', async () => {
