@@ -116,7 +116,9 @@ class H(http.server.BaseHTTPRequestHandler):
             return J(200, dict(j, counts=VF.counts(j)) if j else {'error': 'That send was not found.'})
         if act == 'jobs': return J(200, {'jobs': VF.jobs()})
         try:
-            if act == 'master': return J(200, {'rows': VF.master(force=bool(q.get('force')))})
+            if act == 'master':
+                rows = VF.master(force=bool(q.get('force')))
+                return J(200, {'rows': rows, 'new': VF.new_fos(rows)})
             text = str(q.get('text') or '')[:400_000]
             center, project = str(q.get('center') or '').strip(), str(q.get('project') or '').strip()
             videos = 'No' if q.get('videos') == 'No' else 'Yes'

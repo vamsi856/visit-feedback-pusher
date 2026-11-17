@@ -103,13 +103,16 @@ const scope=()=>M.filter(r=>r.center===$('l-center').value&&r.project===$('l-pro
 const devices=rows=>{const by={};rows.forEach(r=>{(by[r.vendor]=by[r.vendor]||new Set()).add((r.email||r.option).toLowerCase())});return by};
 function lists(){const q=$('l-q').value.trim().toLowerCase();
  return scope().filter(r=>FOS.has(r.vendor)&&(!q||(r.business+' '+r.email).toLowerCase().includes(q)))}
-function drawFOs(){const by=devices(scope()),names=Object.keys(by).sort((x,y)=>x.localeCompare(y)),box=$('fo-list');
+// NEW: field officers the tracker added in the last 3 days ("center|project|team"), listed first with a New mark
+let NEW=new Set();
+const isNew=n=>NEW.has($('l-center').value+'|'+$('l-project').value+'|'+n);
+function drawFOs(){const by=devices(scope()),names=Object.keys(by).sort((x,y)=>(isNew(y)-isNew(x))||x.localeCompare(y)),box=$('fo-list');
  FOS=new Set([...FOS].filter(n=>by[n]));box.innerHTML='';
  names.forEach(n=>{const lb=el('label'),cb=el('input');cb.type='checkbox';cb.checked=FOS.has(n);
   cb.addEventListener('change',()=>{cb.checked?FOS.add(n):FOS.delete(n);drawRows()});
-  lb.append(cb,el('span',n+' – '+by[n].size+(by[n].size===1?' device':' devices')));box.appendChild(lb)});
- const all=names.reduce((s,n)=>s+by[n].size,0);
- $('fo-sum').textContent=names.length+' FOs · '+all+' devices';if(!names.length)box.appendChild(el('div','No field officers for this center and project.','empty'))}
+  lb.append(cb,el('span',n+' – '+by[n].size+(by[n].size===1?' device':' devices')));if(isNew(n))lb.append(el('span','New','st ok'));box.appendChild(lb)});
+ const all=names.reduce((s,n)=>s+by[n].size,0),nn=names.filter(isNew).length;
+ $('fo-sum').textContent=names.length+' FOs · '+all+' devices'+(nn?' · '+nn+' new':'');if(!names.length)box.appendChild(el('div','No field officers for this center and project.','empty'))}
 function drawRows(){const rows=lists(),tb=$('l-rows');tb.innerHTML='';
  rows.forEach(r=>{const tr=document.createElement('tr'),cb=el('input');cb.type='checkbox';cb.dataset.k=JSON.stringify([r.vendor,r.email,r.business]);
   const td=document.createElement('td');td.appendChild(cb);tr.append(td,el('td',r.vendor),el('td',r.business),el('td',r.email));tb.appendChild(tr)});
@@ -123,7 +126,7 @@ function drawFeedbackSelects(){fill($('center'),uniq(M.map(r=>r.center)),$('cent
 $('fetch').addEventListener('click',async()=>{$('fetch').disabled=true;$('fetch-st').textContent='Fetching from the tracker…';
  const j=await call('master',{force:true});$('fetch').disabled=false;
  if(j.error){$('fetch-st').textContent=j.error;return}
- M=j.rows;$('fetch-st').textContent=M.length+' businesses fetched';$('lists').hidden=false;
+ M=j.rows;NEW=new Set(j.new||[]);$('fetch-st').textContent=M.length+' businesses fetched'+(NEW.size?' · '+NEW.size+' new field officer'+(NEW.size>1?'s':'')+' in the last 3 days':'');$('lists').hidden=false;
  fill($('l-center'),uniq(M.map(r=>r.center)),D.center);fill($('l-project'),uniq(M.filter(r=>r.center===$('l-center').value).map(r=>r.project)),D.project);
  drawLists();drawFeedbackSelects()});
 ['l-center','l-project'].forEach(id=>$(id).addEventListener('change',drawLists));

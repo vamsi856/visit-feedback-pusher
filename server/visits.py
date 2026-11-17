@@ -65,6 +65,20 @@ def master(force=False):
     return rows
 
 
+NEW_DAYS = 3
+def new_fos(rows):
+    """Field officers (center|project|team) the tracker added lately: each one's first Fetch is kept in fos_seen.json, and an FO
+    first seen in the last 3 days counts as new. The very first Fetch only takes note – nothing is new then."""
+    path = os.path.join(DIR, 'fos_seen.json')
+    try:
+        with open(path, encoding='utf-8') as f: seen = json.load(f)
+    except (OSError, ValueError): seen = {}
+    now, first = time.time(), not seen
+    for r in rows: seen.setdefault('|'.join((r['center'], r['project'], r['vendor'])), 0 if first else now)
+    _write(path, seen)
+    return sorted(k for k, t in seen.items() if t and now - t < NEW_DAYS * 86400)
+
+
 # ---------------- the pasted table ----------------
 def parse(text):
     """Team, collector email, 1st / 2nd / 3rd visit feedback – tab-separated (straight from a sheet), or split by | or 2+ spaces.
