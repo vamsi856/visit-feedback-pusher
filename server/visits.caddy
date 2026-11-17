@@ -1,0 +1,9 @@
+# The visit feedback site – its own address, its own app (127.0.0.1:8097). No access log: the private link carries its key.
+visits.egocentric.duckdns.org {
+	encode gzip
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		-Server
+	}
+	reverse_proxy 127.0.0.1:8097
+}

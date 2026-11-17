@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><title>Visit feedback</title>
+<style>
+:root{--bg:#f6f5f2;--card:#fff;--fg:#1c1b19;--mute:#6b6862;--line:#e2dfd8;--accent:#1f5f8b;--ok:#1d7a46;--okb:#e5f3ea;--warn:#8a5a00;--warnb:#fbf0d9;--bad:#b23b3b;--badb:#f8e4e2;--neu:#55524c;--neub:#eeece7}
+@media (prefers-color-scheme:dark){:root{--bg:#141413;--card:#1d1c1a;--fg:#ecebe7;--mute:#a19e97;--line:#34322e;--accent:#79b4dd;--ok:#7fd3a0;--okb:#1d3326;--warn:#f0c46a;--warnb:#3a2f17;--bad:#f09a92;--badb:#3d201e;--neu:#c9c6bf;--neub:#2a2926}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+.wrap{max-width:1080px;margin:0 auto;padding:24px 16px 60px}
+.hero h1{font-size:26px;margin:0 0 4px}.hero p{color:var(--mute);margin:0 0 18px;max-width:72ch}
+h2{font-size:17px;margin:22px 0 10px}.mute{color:var(--mute)}
+.f{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px}
+.btn{font:inherit;font-weight:600;border:1px solid var(--accent);background:var(--accent);color:#fff;border-radius:8px;padding:9px 16px;min-height:40px;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--accent)}.btn:disabled{opacity:.45;cursor:default}
+.actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+input,select,textarea{font:inherit;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-height:40px;width:100%}
+textarea{display:block;margin-top:4px;min-height:180px}
+.ticks{display:flex;flex-wrap:wrap;gap:6px 18px}.ticks label{display:flex;gap:8px;align-items:center;padding:6px 0}.ticks input{width:auto;min-height:0}
+table{border-collapse:collapse;width:100%;font-size:14px}th{font-size:12px;font-weight:600;color:var(--mute);text-align:left;padding:8px}
+td{padding:8px;border-top:1px solid var(--line);vertical-align:top}td.r{text-align:right}td input{width:auto;min-height:0}
+.st{display:inline-block;font-size:12px;font-weight:600;padding:2px 8px;border-radius:99px}
+.st.ok{color:var(--ok);background:var(--okb)}.st.warn{color:var(--warn);background:var(--warnb)}.st.bad{color:var(--bad);background:var(--badb)}.st.neutral{color:var(--neu);background:var(--neub)}
+.note{border-radius:8px;padding:10px 12px;font-size:14px}.note.warn{color:var(--warn);background:var(--warnb)}
+.empty{border:1px dashed var(--line);border-radius:10px;padding:18px;color:var(--mute);text-align:center}
+a{color:var(--accent)}
+</style></head><body><div class="wrap">
+<div class="hero"><h1>Visit feedback</h1><p>Send the feedback you gave on vendor visits to the visit tracker. This server sends every row and shows the tracker's answer to each one.</p></div>
+<div class="f">
+ <h2 style="margin-top:0">1. The tracker's lists</h2>
+ <p class="mute" style="font-size:13px;margin:0 0 10px">Fetch reads the centers, projects, vendor teams and businesses straight from the tracker form, as it is right now.</p>
+ <div class="actions"><button class="btn ghost" id="fetch">Fetch</button><span id="fetch-st" class="mute" style="font-size:13px"></span></div>
+ <div id="lists" hidden>
+  <div class="vf-grid">
+   <label>Center<select id="l-center"></select></label>
+   <label>Project<select id="l-project"></select></label>
+   <label>Vendor team / FO<select id="l-team"></select></label>
+   <label>Search<input id="l-q" autocomplete="off" placeholder="business or email"></label>
+  </div>
+  <div class="actions" style="margin:10px 0">
+   <button class="btn ghost" id="l-all">Tick all shown</button>
+   <button class="btn ghost" id="l-copy">Copy emails</button>
+   <button class="btn ghost" id="l-add">Add ticked to the feedback table</button>
+   <span id="l-st" class="mute" style="font-size:13px"></span>
+  </div>
+  <div style="overflow-x:auto"><table><thead><tr><th></th><th>Vendor team / FO</th><th>Business</th><th>Email</th></tr></thead><tbody id="l-rows"></tbody></table></div>
+ </div>
+</div>
+
+<div class="f" style="margin-top:16px">
+ <h2 style="margin-top:0">2. Your feedback</h2>
+ <div class="vf-grid">
+  <label>Center<select id="center"></select></label>
+  <label>Project<select id="project"></select></label>
+  <label>Recorded videos checked?<select id="videos"><option>Yes</option><option>No</option></select></label>
+  <label>Seconds between submissions<input id="gap" type="number" min="0" max="120" value="8"></label>
+ </div>
+ <div class="ticks" style="margin:10px 0">
+  <label><input type="checkbox" id="v1" checked> 1st visit</label>
+  <label><input type="checkbox" id="v2" checked> 2nd visit</label>
+  <label><input type="checkbox" id="v3" checked> 3rd visit</label>
+ </div>
+ <label>Feedback table – vendor team, collector email, 1st, 2nd, 3rd visit feedback (paste from your sheet)
+  <textarea id="text" rows="10" spellcheck="false" style="font-family:ui-monospace,monospace;font-size:13px" placeholder="Vendor team	collector@example.com	What you told them on the 1st visit	2nd visit	3rd visit"></textarea></label>
+ <p class="mute" style="font-size:13px;margin:6px 0 10px">Your words are sent exactly as typed. Photo, location and video reference ID are left blank. A row the tracker already accepted is never sent twice.</p>
+ <div class="actions"><button class="btn ghost" id="check">Check</button><button class="btn" id="send" disabled>Send</button><span id="st" class="mute" style="font-size:13px"></span></div>
+ <div id="errs"></div>
+ <div id="plan"></div>
+</div>
+
+<div class="f" style="margin-top:16px" id="job-box" hidden>
+ <h2 style="margin-top:0" id="job-h">Sending</h2>
+ <div id="job-sum" style="font-weight:600;margin-bottom:8px"></div>
+ <div class="actions" style="margin-bottom:10px"><button class="btn ghost" id="stop">Stop</button></div>
+ <div id="job-rows"></div>
+</div>
+
+<h2>Recent sends</h2><div id="recent"></div>
+<style>
+.vf-grid{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+.vf-grid label{display:flex;flex-direction:column;gap:4px;font-size:13px}
+td.fb{max-width:420px;white-space:pre-wrap;font-size:13px}
+td.rp{max-width:260px;font-size:12px;color:var(--mute)}
+</style>
+<script type="application/json" id="data">__DATA__</script>
+<script>
+const D=JSON.parse(document.getElementById('data').textContent),$=id=>document.getElementById(id);
+let M=[],ready=0,poll=null,curJob=null;
+const call=async(act,body)=>{const r=await fetch('/api/'+act,{method:'POST',headers:{'X-CSRF':D.csrf,'Content-Type':'application/json'},body:JSON.stringify(body||{})});
+ let j={};try{j=await r.json()}catch(e){j={error:'The portal answered '+r.status}}if(!r.ok&&!j.error)j.error='The portal answered '+r.status;return j};
+const el=(tag,txt,cls)=>{const e=document.createElement(tag);if(txt!=null)e.textContent=txt;if(cls)e.className=cls;return e};
+const uniq=a=>[...new Set(a)].sort((x,y)=>x.localeCompare(y));
+const fill=(sel,vals,keep,any)=>{const old=keep||sel.value;sel.innerHTML='';if(any)sel.appendChild(new Option(any,''));vals.forEach(v=>sel.appendChild(new Option(v,v)));if([...sel.options].some(o=>o.value===old))sel.value=old};
+const pill=s=>{const t={sent:'ok',done:'ok',ready:'neutral',waiting:'neutral',sending:'warn',failed:'bad',problem:'bad',skipped:'warn',unconfirmed:'warn'}[s]||'neutral';
+ const w={sent:'Saved',done:'Already sent',ready:'Ready',waiting:'Waiting',sending:'Sending',failed:'Failed',problem:'Cannot send',skipped:'Not sent',unconfirmed:'Check the sheet'}[s]||s;return el('span',w,'st '+t)};
+
+// ---- 1. lists ----
+function lists(){const c=$('l-center').value,p=$('l-project').value,t=$('l-team').value,q=$('l-q').value.trim().toLowerCase();
+ return M.filter(r=>r.center===c&&r.project===p&&(!t||r.vendor===t)&&(!q||(r.business+' '+r.email).toLowerCase().includes(q)))}
+function drawLists(){fill($('l-project'),uniq(M.filter(r=>r.center===$('l-center').value).map(r=>r.project)));
+ fill($('l-team'),uniq(M.filter(r=>r.center===$('l-center').value&&r.project===$('l-project').value).map(r=>r.vendor)),null,'All teams');
+ const rows=lists(),tb=$('l-rows');tb.innerHTML='';
+ rows.forEach(r=>{const tr=document.createElement('tr'),cb=el('input');cb.type='checkbox';cb.dataset.k=JSON.stringify([r.vendor,r.email]);
+  const td=document.createElement('td');td.appendChild(cb);tr.append(td,el('td',r.vendor),el('td',r.business),el('td',r.email));tb.appendChild(tr)});
+ $('l-st').textContent=rows.length+' businesses, '+uniq(rows.map(r=>r.vendor)).length+' teams'}
+function drawFeedbackSelects(){fill($('center'),uniq(M.map(r=>r.center)),$('center').value||D.center);
+ fill($('project'),uniq(M.filter(r=>r.center===$('center').value).map(r=>r.project)),$('project').value||D.project)}
+$('fetch').addEventListener('click',async()=>{$('fetch').disabled=true;$('fetch-st').textContent='Fetching from the tracker…';
+ const j=await call('master',{force:true});$('fetch').disabled=false;
+ if(j.error){$('fetch-st').textContent=j.error;return}
+ M=j.rows;$('fetch-st').textContent=M.length+' businesses fetched';$('lists').hidden=false;
+ fill($('l-center'),uniq(M.map(r=>r.center)),D.center);fill($('l-project'),uniq(M.filter(r=>r.center===$('l-center').value).map(r=>r.project)),D.project);
+ drawLists();drawFeedbackSelects()});
+['l-center','l-project','l-team'].forEach(id=>$(id).addEventListener('change',drawLists));
+$('l-q').addEventListener('input',drawLists);
+$('center').addEventListener('change',drawFeedbackSelects);
+const ticked=()=>[...document.querySelectorAll('#l-rows input:checked')].map(c=>JSON.parse(c.dataset.k));
+$('l-all').addEventListener('click',()=>document.querySelectorAll('#l-rows input').forEach(c=>c.checked=true));
+$('l-copy').addEventListener('click',async()=>{const t=ticked(),e=(t.length?t.map(x=>x[1]):lists().map(r=>r.email)).join('\n');
+ try{await navigator.clipboard.writeText(e);$('l-st').textContent=e.split('\n').length+' emails copied'}catch(_){$('l-st').textContent='Could not copy – select them in the table'}});
+$('l-add').addEventListener('click',()=>{const t=ticked();if(!t.length){$('l-st').textContent='Tick businesses first';return}
+ const ta=$('text');ta.value=(ta.value.trim()?ta.value.replace(/\s*$/,'\n'):'')+t.map(x=>x[0]+'\t'+x[1]+'\t\t\t').join('\n');
+ $('center').value=$('l-center').value;drawFeedbackSelects();$('project').value=$('l-project').value;
+ $('l-st').textContent=t.length+' rows added – type your feedback in them below';ta.focus()});
+
+// ---- 2. check and send ----
+const form=()=>({text:$('text').value,center:$('center').value,project:$('project').value,videos:$('videos').value,gap:+$('gap').value||0,
+ visits:[['v1','1st Visit'],['v2','2nd Visit'],['v3','3rd Visit']].filter(v=>$(v[0]).checked).map(v=>v[1])});
+function table(items,withReply){const t=el('table'),h=el('thead'),hr=document.createElement('tr');
+ ['Line','Team','Email','Visit','Feedback','State'].concat(withReply?['Tracker reply']:[]).forEach(x=>hr.appendChild(el('th',x)));h.appendChild(hr);t.appendChild(h);
+ const b=el('tbody');items.forEach(it=>{const tr=document.createElement('tr');tr.append(el('td',it.line,'r'),el('td',it.vendor||it.team),el('td',it.email),el('td',it.visit),el('td',it.feedback,'fb'));
+  const s=document.createElement('td');s.appendChild(pill(it.state));if(it.note)s.appendChild(el('div',it.note,'mute'));tr.appendChild(s);
+  if(withReply)tr.appendChild(el('td',it.reply||'','rp'));b.appendChild(tr)});t.appendChild(b);const w=el('div');w.style.overflowX='auto';w.appendChild(t);return w}
+function errors(list){const e=$('errs');e.innerHTML='';(list||[]).forEach(x=>{const n=el('div',x,'note warn');n.style.margin='8px 0';e.appendChild(n)})}
+$('check').addEventListener('click',async()=>{$('send').disabled=true;$('st').textContent='Checking against the tracker…';
+ const j=await call('check',form());if(j.error){$('st').textContent=j.error;return}
+ errors(j.errors);$('plan').innerHTML='';$('plan').appendChild(table(j.items,false));
+ ready=j.items.filter(i=>i.state==='ready').length;const bad=j.items.filter(i=>i.state==='problem').length,done=j.items.filter(i=>i.state==='done').length;
+ $('st').textContent=ready+' ready to send'+(done?', '+done+' already sent':'')+(bad?', '+bad+' cannot be sent (see the table)':'');
+ $('send').textContent='Send '+ready;$('send').disabled=!ready});
+['text','center','project','videos','v1','v2','v3'].forEach(id=>$(id).addEventListener('input',()=>{$('send').disabled=true;$('send').textContent='Send';$('st').textContent='Press Check again'}));
+$('send').addEventListener('click',async()=>{if(!confirm('Send '+ready+' visit feedback'+(ready>1?'s':'')+' to the tracker now?'))return;
+ $('send').disabled=true;$('st').textContent='Starting…';const j=await call('send',form());
+ if(j.error){$('st').textContent=j.error;return}$('st').textContent='';watch(j.id)});
+
+// ---- 3. progress ----
+async function watch(id){curJob=id;$('job-box').hidden=false;clearTimeout(poll);
+ const j=await call('job',{id});if(j.error){$('job-sum').textContent=j.error;return}
+ const c=j.counts,all=j.items.length,sent=(c.sent||0),already=(c.done||0),failed=(c.failed||0),bad=(c.problem||0),todo=(c.waiting||0)+(c.sending||0),unsure=(c.unconfirmed||0);
+ const live=['starting','queued','sending'].includes(j.state);
+ $('job-h').textContent=live?'Sending – you can close this page, the server carries on':(j.state==='done'?'Finished':'Stopped');
+ $('job-sum').textContent=(live?'Saved '+sent+' so far, '+todo+' to go':'Saved '+sent+' of '+(all-bad-already))+(already?' · '+already+' already sent before':'')+(failed?' · '+failed+' failed – press Check and Send again':'')+(unsure?' · '+unsure+' to check in the sheet':'')+(bad?' · '+bad+' could not be sent':'')+(j.why?' · '+j.why:'');
+ $('job-sum').style.color=!live&&(failed||unsure||j.state!=='done')?'var(--bad)':'var(--ok)';
+ $('stop').hidden=!live;$('job-rows').innerHTML='';$('job-rows').appendChild(table(j.items,true));
+ if(live)poll=setTimeout(()=>watch(id),3000);else recent()}
+$('stop').addEventListener('click',async()=>{if(curJob&&confirm('Stop after the row being sent now?')){await call('stop',{id:curJob});watch(curJob)}});
+async function recent(){const j=await call('jobs');const r=$('recent');r.innerHTML='';
+ if(!j.jobs||!j.jobs.length){r.appendChild(el('div','Nothing sent yet.','empty'));return}
+ const t=el('table'),hr=document.createElement('tr');['Started','State','Sent','Failed',''].forEach(x=>hr.appendChild(el('th',x)));const h=el('thead');h.appendChild(hr);t.appendChild(h);
+ const b=el('tbody');j.jobs.forEach(x=>{const tr=document.createElement('tr'),a=el('a','Open');a.href='#';a.addEventListener('click',e=>{e.preventDefault();watch(x.id)});
+  const td=document.createElement('td');td.appendChild(a);tr.append(el('td',new Date(x.created*1000).toLocaleString()),el('td',x.state),el('td',x.counts.sent||0,'r'),el('td',x.counts.failed||0,'r'),td);b.appendChild(tr)});
+ t.appendChild(b);r.appendChild(t)}
+fill($('center'),[D.center],D.center);fill($('project'),[D.project],D.project);recent();
+</script>
+</div></body></html>

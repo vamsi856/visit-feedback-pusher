@@ -1,0 +1,31 @@
+[Unit]
+Description=Visit feedback site (its own app, not part of the portal)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=visits
+Group=visits
+StateDirectory=egocentric-visits
+StateDirectoryMode=0700
+Environment=VISITS_HOME=/var/lib/egocentric-visits VISITS_PORT=8097 PYTHONUNBUFFERED=1
+ExecStart=/usr/bin/python3 -I /opt/visit-feedback/server.py
+Restart=always
+RestartSec=3
+# a restart of the site leaves a send in progress running (each send is its own process)
+KillMode=process
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+MemoryMax=512M
+CPUWeight=20
+Nice=5
+
+[Install]
+WantedBy=multi-user.target
