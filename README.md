@@ -18,3 +18,9 @@ Rows whose team or email isn't on the tracker are shown in the preview and left 
 ## Playwright version
 
 `playwright/` has a script that fills the tracker form in a real browser, one row per real visit, from a CSV. It does a dry run by default and only sends with `--submit`. Photo, location and video ID are left blank. See [playwright/README.md](playwright/README.md).
+
+## Server version (recommended)
+
+`server/` is a small site of its own that sends the feedback from a server, so nothing depends on a browser tab. It runs on its own machine at `https://visits.2-28-66-226.sslip.io` (open it through your private link once per device). **Fetch** loads the tracker's teams and businesses, **Check** matches your table, **Send** sends every row field for field as the form does and counts a row as saved only when the tracker answers "Data has been saved to your Google Sheet". Saved rows are never sent twice.
+
+Install or update on a server: copy the files in `server/` there and run `bash install.sh <site address>` as root.

@@ -1,5 +1,5 @@
-# The visit feedback site – its own address, its own app (127.0.0.1:8097). No access log: the private link carries its key.
-visits.egocentric.duckdns.org {
+# The visit feedback site (127.0.0.1:8097). No access log: the private link carries its key.
+__SITE__ {
 	encode gzip
 	header {
 		Strict-Transport-Security "max-age=31536000"
