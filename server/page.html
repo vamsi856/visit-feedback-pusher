@@ -14,7 +14,7 @@ h2{font-size:17px;margin:22px 0 10px}.mute{color:var(--mute)}
 .actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 input,select,textarea{font:inherit;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-height:40px;width:100%}
 textarea{display:block;margin-top:4px;min-height:180px}
-.ticks{display:flex;flex-wrap:wrap;gap:6px 18px}.ticks label{display:flex;gap:8px;align-items:center;padding:6px 0}.ticks input{width:auto;min-height:0}
+.ticks{display:flex;flex-wrap:wrap;gap:6px 18px}.ticks.fo{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:0 18px}.ticks.fo label{min-height:44px}.ticks label{display:flex;gap:8px;align-items:center;padding:6px 0}.ticks input{width:auto;min-height:0}
 table{border-collapse:collapse;width:100%;font-size:14px}th{font-size:12px;font-weight:600;color:var(--mute);text-align:left;padding:8px}
 td{padding:8px;border-top:1px solid var(--line);vertical-align:top}td.r{text-align:right}td input{width:auto;min-height:0}
 .st{display:inline-block;font-size:12px;font-weight:600;padding:2px 8px;border-radius:99px}
@@ -32,12 +32,15 @@ a{color:var(--accent)}
   <div class="vf-grid">
    <label>Center<select id="l-center"></select></label>
    <label>Project<select id="l-project"></select></label>
-   <label>Vendor team / FO<select id="l-team"></select></label>
    <label>Search<input id="l-q" autocomplete="off" placeholder="business or email"></label>
   </div>
-  <div class="actions" style="margin:10px 0">
-   <button class="btn ghost" id="l-all">Tick all shown</button>
+  <h3 style="font-size:15px;margin:16px 0 4px">Field officers <span id="fo-sum" class="mute" style="font-weight:400;font-size:13px"></span></h3>
+  <div class="actions" style="margin-bottom:6px"><button class="btn ghost" id="fo-all">All</button><button class="btn ghost" id="fo-none">None</button></div>
+  <div class="ticks fo" id="fo-list"></div>
+  <div class="actions" style="margin:14px 0 10px">
+   <button class="btn ghost" id="l-copylist">Copy list (FO + email)</button>
    <button class="btn ghost" id="l-copy">Copy emails</button>
+   <button class="btn ghost" id="l-all">Tick all shown</button>
    <button class="btn ghost" id="l-add">Add ticked to the feedback table</button>
    <span id="l-st" class="mute" style="font-size:13px"></span>
   </div>
@@ -93,14 +96,27 @@ const pill=s=>{const t={sent:'ok',done:'ok',ready:'neutral',waiting:'neutral',se
  const w={sent:'Saved',done:'Already sent',ready:'Ready',waiting:'Waiting',sending:'Sending',failed:'Failed',problem:'Cannot send',skipped:'Not sent',unconfirmed:'Check the sheet'}[s]||s;return el('span',w,'st '+t)};
 
 // ---- 1. lists ----
-function lists(){const c=$('l-center').value,p=$('l-project').value,t=$('l-team').value,q=$('l-q').value.trim().toLowerCase();
- return M.filter(r=>r.center===c&&r.project===p&&(!t||r.vendor===t)&&(!q||(r.business+' '+r.email).toLowerCase().includes(q)))}
-function drawLists(){fill($('l-project'),uniq(M.filter(r=>r.center===$('l-center').value).map(r=>r.project)));
- fill($('l-team'),uniq(M.filter(r=>r.center===$('l-center').value&&r.project===$('l-project').value).map(r=>r.vendor)),null,'All teams');
- const rows=lists(),tb=$('l-rows');tb.innerHTML='';
+// a device = one collector email under a field officer (vendor team) in the chosen center and project
+let FOS=new Set();
+const scope=()=>M.filter(r=>r.center===$('l-center').value&&r.project===$('l-project').value);
+const devices=rows=>{const by={};rows.forEach(r=>{(by[r.vendor]=by[r.vendor]||new Set()).add((r.email||r.option).toLowerCase())});return by};
+function lists(){const q=$('l-q').value.trim().toLowerCase();
+ return scope().filter(r=>FOS.has(r.vendor)&&(!q||(r.business+' '+r.email).toLowerCase().includes(q)))}
+function drawFOs(){const by=devices(scope()),names=Object.keys(by).sort((x,y)=>x.localeCompare(y)),box=$('fo-list');
+ FOS=new Set([...FOS].filter(n=>by[n]));box.innerHTML='';
+ names.forEach(n=>{const lb=el('label'),cb=el('input');cb.type='checkbox';cb.checked=FOS.has(n);
+  cb.addEventListener('change',()=>{cb.checked?FOS.add(n):FOS.delete(n);drawRows()});
+  lb.append(cb,el('span',n+' – '+by[n].size+(by[n].size===1?' device':' devices')));box.appendChild(lb)});
+ const all=names.reduce((s,n)=>s+by[n].size,0);
+ $('fo-sum').textContent=names.length+' FOs · '+all+' devices';if(!names.length)box.appendChild(el('div','No field officers for this center and project.','empty'))}
+function drawRows(){const rows=lists(),tb=$('l-rows');tb.innerHTML='';
  rows.forEach(r=>{const tr=document.createElement('tr'),cb=el('input');cb.type='checkbox';cb.dataset.k=JSON.stringify([r.vendor,r.email]);
   const td=document.createElement('td');td.appendChild(cb);tr.append(td,el('td',r.vendor),el('td',r.business),el('td',r.email));tb.appendChild(tr)});
- $('l-st').textContent=rows.length+' businesses, '+uniq(rows.map(r=>r.vendor)).length+' teams'}
+ const n=Object.values(devices(rows)).reduce((s,v)=>s+v.size,0);
+ $('l-st').textContent=FOS.size?n+' devices from '+FOS.size+(FOS.size===1?' FO':' FOs')+' picked':'Pick field officers above'}
+function drawLists(){fill($('l-project'),uniq(M.filter(r=>r.center===$('l-center').value).map(r=>r.project)));drawFOs();drawRows()}
+$('fo-all').addEventListener('click',()=>{FOS=new Set(Object.keys(devices(scope())));drawFOs();drawRows()});
+$('fo-none').addEventListener('click',()=>{FOS=new Set();drawFOs();drawRows()});
 function drawFeedbackSelects(){fill($('center'),uniq(M.map(r=>r.center)),$('center').value||D.center);
  fill($('project'),uniq(M.filter(r=>r.center===$('center').value).map(r=>r.project)),$('project').value||D.project)}
 $('fetch').addEventListener('click',async()=>{$('fetch').disabled=true;$('fetch-st').textContent='Fetching from the tracker…';
@@ -109,13 +125,17 @@ $('fetch').addEventListener('click',async()=>{$('fetch').disabled=true;$('fetch-
  M=j.rows;$('fetch-st').textContent=M.length+' businesses fetched';$('lists').hidden=false;
  fill($('l-center'),uniq(M.map(r=>r.center)),D.center);fill($('l-project'),uniq(M.filter(r=>r.center===$('l-center').value).map(r=>r.project)),D.project);
  drawLists();drawFeedbackSelects()});
-['l-center','l-project','l-team'].forEach(id=>$(id).addEventListener('change',drawLists));
-$('l-q').addEventListener('input',drawLists);
+['l-center','l-project'].forEach(id=>$(id).addEventListener('change',drawLists));
+$('l-q').addEventListener('input',drawRows);
 $('center').addEventListener('change',drawFeedbackSelects);
 const ticked=()=>[...document.querySelectorAll('#l-rows input:checked')].map(c=>JSON.parse(c.dataset.k));
 $('l-all').addEventListener('click',()=>document.querySelectorAll('#l-rows input').forEach(c=>c.checked=true));
-$('l-copy').addEventListener('click',async()=>{const t=ticked(),e=(t.length?t.map(x=>x[1]):lists().map(r=>r.email)).join('\n');
- try{await navigator.clipboard.writeText(e);$('l-st').textContent=e.split('\n').length+' emails copied'}catch(_){$('l-st').textContent='Could not copy – select them in the table'}});
+// copies the ticked rows, or every row shown when none is ticked: emails one a line, or FO + email tab-separated (pastes into a sheet)
+const pairs=()=>{const t=ticked();return t.length?t:lists().map(r=>[r.vendor,r.email])};
+const copy=async(text,n,what)=>{if(!n){$('l-st').textContent='Pick field officers first';return}
+ try{await navigator.clipboard.writeText(text);$('l-st').textContent=n+' '+what+' copied'}catch(_){$('l-st').textContent='Could not copy – select them in the table'}};
+$('l-copy').addEventListener('click',()=>{const p=pairs();copy(p.map(x=>x[1]).join('\n'),p.length,'emails')});
+$('l-copylist').addEventListener('click',()=>{const p=pairs();copy('Field officer\tEmail\n'+p.map(x=>x[0]+'\t'+x[1]).join('\n'),p.length,'rows (FO + email)')});
 $('l-add').addEventListener('click',()=>{const t=ticked();if(!t.length){$('l-st').textContent='Tick businesses first';return}
  const ta=$('text');ta.value=(ta.value.trim()?ta.value.replace(/\s*$/,'\n'):'')+t.map(x=>x[0]+'\t'+x[1]+'\t\t\t').join('\n');
  $('center').value=$('l-center').value;drawFeedbackSelects();$('project').value=$('l-project').value;

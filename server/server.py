@@ -102,7 +102,8 @@ class H(http.server.BaseHTTPRequestHandler):
         t = self.tok()
         if not t: return J(403, {'error': 'Open your private link again.'})
         host = (self.headers.get('X-Forwarded-Host') or self.headers.get('Host') or '').split(',')[0].strip()
-        if self.headers.get('Origin') not in (f'https://{host}', None) or not hmac.compare_digest(self.headers.get('X-CSRF') or '', self.csrf(t)):
+        local = re.fullmatch(r'(localhost|127\.0\.0\.1)(:\d+)?', host)     # a test on this machine has no HTTPS
+        if self.headers.get('Origin') not in (f'https://{host}', f'http://{host}' if local else None, None) or not hmac.compare_digest(self.headers.get('X-CSRF') or '', self.csrf(t)):
             return J(403, {'error': 'This page expired – reload it.'})
         try:
             q = json.loads(body or b'{}')
