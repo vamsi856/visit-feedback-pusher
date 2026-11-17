@@ -1,13 +1,13 @@
 """Visit feedback: the owner's vendor-visit reports, sent to the tracker form (ita.indivillage.com) from this server.
 
 The owner pastes the feedback they gave (team, collector email, 1st / 2nd / 3rd visit feedback); the server matches every row to the
-tracker's own lists and sends it exactly as the form does – photo, location and video reference ID left blank (the owner's manager's
-instruction). Nothing is written or reworded here: the feedback text goes as typed.
+tracker's own lists and sends it exactly as the live form does (its fields read before every send) – video reference ID left blank
+(the owner's manager's instruction), expected hours for the day 5 unless the owner sets it. Nothing is written or reworded here: the feedback text goes as typed.
 
 A send runs as its own process (`visits.py run <job>`), so a restart of the site never cuts it off. A row counts as sent only when
 the tracker answers that the data was saved to its Google Sheet; every such row is kept in sent.jsonl and never sent again.
 Files under $VISITS_HOME (mode 600)."""
-import hashlib, http.cookiejar, json, os, re, subprocess, sys, time, urllib.error, urllib.request, uuid
+import hashlib, http.cookiejar, json, os, re, subprocess, sys, time, urllib.error, urllib.parse, urllib.request, uuid
 
 DIR = os.path.expanduser(os.environ.get('VISITS_HOME', '~/.visit-feedback'))
 SENT = os.path.join(DIR, 'sent.jsonl')
@@ -129,12 +129,20 @@ def sent_keys():
 def job_path(jid): return os.path.join(DIR, f'job-{jid}.json')
 
 
-def start(items, videos, gap, who):
+def hours_text(h):
+    """Expected hours for the day as the form takes it (0–24, steps of 0.5); 5 when not given."""
+    try: x = float(h)
+    except (TypeError, ValueError): x = 5.0
+    x = round(max(0.0, min(24.0, x)) * 2) / 2
+    return str(int(x)) if x == int(x) else str(x)
+
+
+def start(items, videos, gap, who, hours='5'):
     """Save the job and run it in a process of its own; returns its id."""
     jid = time.strftime('%Y%m%d-%H%M%S-') + uuid.uuid4().hex[:6]
     todo = [dict(it, state='waiting') if it['state'] == 'ready' else it for it in items]
     _write(job_path(jid), {'id': jid, 'by': who, 'created': time.time(), 'videos': videos, 'gap': max(0, min(GAP_MAX, int(gap))),
-                           'state': 'starting', 'items': todo})
+                           'hours': hours_text(hours), 'state': 'starting', 'items': todo})
     log = open(os.path.join(DIR, f'job-{jid}.log'), 'ab')
     subprocess.Popen([sys.executable, os.path.abspath(__file__), 'run', jid], stdout=log, stderr=log, stdin=subprocess.DEVNULL,
                      start_new_session=True, cwd=os.path.dirname(os.path.abspath(__file__)))
@@ -171,17 +179,50 @@ def stop(jid):
     if job(jid): open(job_path(jid) + '.stop', 'w').close()
 
 
-def _submit(op, it, videos):
-    """One submission, field for field as the tracker form sends it (multipart, empty photo part)."""
-    b = '----WebKitFormBoundary' + uuid.uuid4().hex[:16]
-    fields = [('center', it['center']), ('project_name', it['project']), ('vendor_team', it['vendor']), ('business_name_email', it['option']),
-              ('visit_type', it['visit']), ('videos_checked', videos), ('video_ref_id', ''), ('feedback', it['feedback'])]
-    body = b''.join(f'--{b}\r\nContent-Disposition: form-data; name="{k}"\r\n\r\n{v}\r\n'.encode() for k, v in fields)
-    body += f'--{b}\r\nContent-Disposition: form-data; name="photo"; filename=""\r\nContent-Type: application/octet-stream\r\n\r\n\r\n'.encode()
-    body += b''.join(f'--{b}\r\nContent-Disposition: form-data; name="{k}"\r\n\r\n\r\n'.encode() for k in ('location_address', 'latitude', 'longitude'))
-    body += f'--{b}--\r\n'.encode()
+# The form as it was on 17 Nov 2026 (POST, urlencoded) – used only when the live page can't be read
+FALLBACK_FORM = (False, [('center', 'select', ''), ('project_name', 'select', ''), ('vendor_team', 'select', ''), ('business_name_email', 'select', ''),
+                         ('visit_type', 'select', ''), ('videos_checked', 'select', ''), ('video_ref_id', 'text', ''), ('feedback', 'textarea', ''),
+                         ('expected_hours', 'number', '')])
+
+
+def form_spec(page):
+    """The tracker form's fields in page order, as a browser would send them: (multipart?, [(name, type, default value)])."""
+    m = re.search(r'(?is)<form\b[^>]*id=["\']visitForm["\'][^>]*>.*?</form>', page) or re.search(r'(?is)<form\b[^>]*>.*?</form>', page)
+    if not m: raise ValueError('no form on the page')
+    multipart = 'multipart/form-data' in re.match(r'(?is)<form\b[^>]*>', m.group(0)).group(0).lower()
+    fields = []
+    for f in re.finditer(r'(?is)<(input|select|textarea)\b([^>]*)>', m.group(0)):
+        a = f.group(2)
+        n = re.search(r'\bname=["\']([^"\']+)', a)
+        if not n: continue
+        t = f.group(1).lower()
+        if t == 'input': t = (re.search(r'\btype=["\']([^"\']+)', a) or [None, 'text'])[1].lower()
+        if t in ('submit', 'button', 'image', 'reset'): continue
+        v = re.search(r'\bvalue=["\']([^"\']*)', a)
+        fields.append((n.group(1), t, v.group(1) if v and t in ('hidden', 'text', 'number') else ''))
+    if not any(n == 'feedback' for n, _, _ in fields): raise ValueError('the form has no feedback field')
+    return multipart, fields
+
+
+def _submit(op, it, videos, hours, spec):
+    """One submission, field for field as the live tracker form sends it (its order, its encoding; a file field goes empty)."""
+    multipart, fields = spec
+    val = {'center': it['center'], 'project_name': it['project'], 'vendor_team': it['vendor'], 'business_name_email': it['option'],
+           'visit_type': it['visit'], 'videos_checked': videos, 'video_ref_id': '', 'feedback': it['feedback'], 'expected_hours': hours,
+           'location_address': '', 'latitude': '', 'longitude': ''}
+    if multipart:
+        b = '----WebKitFormBoundary' + uuid.uuid4().hex[:16]
+        body = b''
+        for n, t, d in fields:
+            if t == 'file': body += f'--{b}\r\nContent-Disposition: form-data; name="{n}"; filename=""\r\nContent-Type: application/octet-stream\r\n\r\n\r\n'.encode()
+            else: body += f'--{b}\r\nContent-Disposition: form-data; name="{n}"\r\n\r\n{val.get(n, d)}\r\n'.encode()
+        body += f'--{b}--\r\n'.encode()
+        ctype = f'multipart/form-data; boundary={b}'
+    else:
+        body = urllib.parse.urlencode([(n, val.get(n, d)) for n, t, d in fields if t != 'file']).encode()
+        ctype = 'application/x-www-form-urlencoded'
     rq = urllib.request.Request(SUBMIT, data=body, method='POST', headers={
-        'Content-Type': f'multipart/form-data; boundary={b}', 'Origin': 'https://ita.indivillage.com', 'Referer': FORM})
+        'Content-Type': ctype, 'Origin': 'https://ita.indivillage.com', 'Referer': FORM})
     with op.open(rq, timeout=90) as r:
         text = r.read(200_000).decode('utf-8', 'replace')
         return r.status, re.sub(r'\s+', ' ', re.sub(r'(?s)<(script|style)\b.*?</\1>|<[^>]+>', ' ', text)).strip()
@@ -198,8 +239,11 @@ def run(jid):
         try: fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB); break
         except OSError: j['beat'] = time.time(); _write(job_path(jid), j); time.sleep(5)
     op = _opener()
-    try: op.open(FORM, timeout=30).read()                  # the form's own cookies first, as a person opening it would get
-    except (OSError, urllib.error.URLError): pass
+    try:                                                  # the form's own cookies first, as a person opening it would get – and its fields as they are today
+        spec = form_spec(op.open(FORM, timeout=30).read().decode('utf-8', 'replace'))
+    except (OSError, urllib.error.URLError, ValueError) as e:
+        spec = FALLBACK_FORM; print(f'form not read ({e}) – sending the 17 Nov 2026 fields', flush=True)
+    j['form'] = [n for n, _, _ in spec[1]]
     j['state'] = 'sending'
     sent = sent_keys()
     first = True
@@ -213,7 +257,7 @@ def run(jid):
         it['state'] = 'sending'; j['beat'] = time.time(); _write(job_path(jid), j)
         for t in range(TRIES):
             try:
-                code, reply = _submit(op, it, j['videos'])
+                code, reply = _submit(op, it, j['videos'], j.get('hours', '5'), spec)
                 if code == 200 and SAVED.search(reply):
                     it.update(state='sent', note='', reply=reply[:160], at=time.time())
                     with open(os.open(SENT, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600), 'a', encoding='utf-8') as f:

@@ -127,7 +127,7 @@ class H(http.server.BaseHTTPRequestHandler):
             if not any(it['state'] == 'ready' for it in items): return J(200, {'error': 'Nothing ready to send – press Check to see why.'})
             try: gap = int(q.get('gap') or 0)
             except (TypeError, ValueError): gap = 0
-            jid = VF.start(items, videos, gap, self.ip())
+            jid = VF.start(items, videos, gap, self.ip(), q.get('hours'))
             print(f'send {jid}: {sum(it["state"] == "ready" for it in items)} rows', flush=True)
             return J(200, {'id': jid})
         except Exception as e:                            # the tracker unreachable or changed: say so in plain words

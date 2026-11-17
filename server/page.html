@@ -54,6 +54,7 @@ a{color:var(--accent)}
   <label>Center<select id="center"></select></label>
   <label>Project<select id="project"></select></label>
   <label>Recorded videos checked?<select id="videos"><option>Yes</option><option>No</option></select></label>
+  <label>Expected hours for the day<input id="hours" type="number" min="0" max="24" step="0.5" value="5"></label>
   <label>Seconds between submissions<input id="gap" type="number" min="0" max="120" value="8"></label>
  </div>
  <div class="ticks" style="margin:10px 0">
@@ -63,7 +64,7 @@ a{color:var(--accent)}
  </div>
  <label>Feedback table – vendor team, collector email, 1st, 2nd, 3rd visit feedback (paste from your sheet)
   <textarea id="text" rows="10" spellcheck="false" style="font-family:ui-monospace,monospace;font-size:13px" placeholder="Vendor team	collector@example.com	What you told them on the 1st visit	2nd visit	3rd visit"></textarea></label>
- <p class="mute" style="font-size:13px;margin:6px 0 10px">Your words are sent exactly as typed. Photo, location and video reference ID are left blank. A row the tracker already accepted is never sent twice.</p>
+ <p class="mute" style="font-size:13px;margin:6px 0 10px">Your words are sent exactly as typed. Video reference ID is left blank; expected hours go with every row. A row the tracker already accepted is never sent twice.</p>
  <div class="actions"><button class="btn ghost" id="check">Check</button><button class="btn" id="send" disabled>Send</button><span id="st" class="mute" style="font-size:13px"></span></div>
  <div id="errs"></div>
  <div id="plan"></div>
@@ -143,7 +144,7 @@ $('l-add').addEventListener('click',()=>{const t=ticked();if(!t.length){$('l-st'
  $('l-st').textContent=t.length+' rows added – type your feedback in them below';ta.focus()});
 
 // ---- 2. check and send ----
-const form=()=>({text:$('text').value,center:$('center').value,project:$('project').value,videos:$('videos').value,gap:+$('gap').value||0,
+const form=()=>({text:$('text').value,center:$('center').value,project:$('project').value,videos:$('videos').value,hours:$('hours').value||'5',gap:+$('gap').value||0,
  visits:[['v1','1st Visit'],['v2','2nd Visit'],['v3','3rd Visit']].filter(v=>$(v[0]).checked).map(v=>v[1])});
 function table(items,withReply){const t=el('table'),h=el('thead'),hr=document.createElement('tr');
  ['Line','Team','Email','Visit','Feedback','State'].concat(withReply?['Tracker reply']:[]).forEach(x=>hr.appendChild(el('th',x)));h.appendChild(hr);t.appendChild(h);
