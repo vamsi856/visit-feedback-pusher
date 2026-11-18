@@ -121,17 +121,17 @@ def plan(text, center, project, videos, visits):
     items = []
     for r in rows:
         hits = by_email.get(norm(r['email']), [])
-        pick = [h for h in hits if norm(h['vendor']) == norm(r['team'])] or (hits if len(hits) == 1 else [])
+        pick = [h for h in hits if norm(h['vendor']) == norm(r['team'])]   # never moved to another FO by itself: the table must say the tracker's FO
         for i, visit in enumerate(VISITS):
             fb = r['feedback'][i]
             if visit not in visits or not fb: continue
             it = {'line': r['line'], 'team': r['team'], 'email': r['email'], 'visit': visit, 'feedback': fb, 'state': 'ready', 'note': ''}
             if not pick:
-                it.update(state='problem', note='not in the tracker under this team' if hits else 'email not in the tracker for this project')
+                it.update(state='problem', note=f"the tracker has this email under {', '.join(sorted({h['vendor'] for h in hits}))} – fix the FO in your table"
+                          if hits else 'email not in the tracker for this project')
             else:
                 h = pick[0]
                 it.update(center=h['center'], project=h['project'], vendor=h['vendor'], option=h['option'])
-                if h['vendor'] != r['team'] and norm(h['vendor']) != norm(r['team']): it['note'] = f"team in the tracker: {h['vendor']}"
                 if key(it, videos) in sent: it.update(state='done', note='already sent before')
             items.append(it)
     return items, errors
