@@ -71,14 +71,21 @@ class H(http.server.BaseHTTPRequestHandler):
         for k, v in (extra or {}).items(): self.send_header(k, v)
         self.end_headers(); self.wfile.write(b)
 
-    def locked(self, msg='Open your private link to use this site.'):
-        return self.out(403, f"<!doctype html><meta name=viewport content='width=device-width,initial-scale=1'><title>Visit feedback</title>"
-                             f"<p style='font:16px system-ui;margin:40px 16px'>{html.escape(msg)}</p>")
+    def locked(self, msg='This browser is not signed in yet. Paste your private link (or just its key) once – it stays signed in for 60 days.'):
+        return self.out(403, "<!doctype html><meta name=viewport content='width=device-width,initial-scale=1'><title>Visit feedback</title>"
+                             "<style>body{font:16px/1.5 system-ui,sans-serif;margin:0;background:#f6f5f2;color:#1c1b19}main{max-width:520px;margin:48px auto;padding:0 16px}"
+                             "input{font:inherit;width:100%;box-sizing:border-box;padding:10px;border:1px solid #ccc;border-radius:8px;min-height:44px;margin:8px 0}"
+                             "button{font:inherit;font-weight:600;padding:10px 18px;min-height:44px;border:0;border-radius:8px;background:#1f5f8b;color:#fff}"
+                             "@media (prefers-color-scheme:dark){body{background:#141413;color:#ecebe7}input{background:#1d1c1a;color:#ecebe7;border-color:#34322e}}</style>"
+                             f"<main><h1 style='font-size:22px'>Visit feedback</h1><p>{html.escape(msg)}</p>"
+                             "<form method='get' action='/'><label>Private link or key<input name='k' autocomplete='off' autocapitalize='off' spellcheck='false' required></label>"
+                             "<button>Sign in</button></form></main>")
 
     def do_GET(self):
         u = urllib.parse.urlsplit(self.path)
         if u.path != '/': return self.out(404, 'Not found', 'text/plain')
-        k = urllib.parse.parse_qs(u.query).get('k', [''])[0]
+        k = urllib.parse.parse_qs(u.query).get('k', [''])[0].strip()
+        if 'k=' in k: k = urllib.parse.parse_qs(urllib.parse.urlsplit(k).query).get('k', [''])[0].strip()   # the whole link pasted
         if k:
             f = FAILS.get(self.ip(), [0, time.time()])
             if f[0] >= 10 and time.time() - f[1] < 3600: return self.locked('Too many wrong links – try again in an hour.')
