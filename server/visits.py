@@ -82,8 +82,10 @@ def new_fos(rows):
 # ---------------- the pasted table ----------------
 def parse(text):
     """Team, collector email, 1st / 2nd / 3rd visit feedback – tab-separated (straight from a sheet), or split by | or 2+ spaces.
+    With a header row the columns are found by name (Vendor Team / FO, 1st / 2nd / 3rd visit …), so extra columns such as Center,
+    Project or Business may come first. Without one: the first cell before the email is the team, the three after it the feedback.
     A row without a team takes the one above it. Lines without an email (headers, notes) are skipped."""
-    out, errors, team = [], [], ''
+    out, errors, team, cols = [], [], '', None
     for ln, line in enumerate(text.splitlines(), 1):
         if not line.strip() or re.fullmatch(r'\s*\|?[\s:|-]+\|?\s*', line): continue
         if '\t' in line: cells = line.split('\t')
@@ -93,10 +95,16 @@ def parse(text):
         at = next((i for i, c in enumerate(cells) if EMAIL.fullmatch(c)), None)
         if at is None:
             if EMAIL.search(line): errors.append(f'Line {ln}: the email is not in a cell of its own.')
+            elif any(re.search(r'e-?mail', c, re.I) for c in cells):          # a header row: remember where things are
+                find = lambda pat: next((i for i, c in enumerate(cells) if re.search(pat, c, re.I)), None)
+                cols = {'team': find(r'vendor|team|\bfo\b|field officer'),
+                        'v': [find(r'\b(1st|first)\b'), find(r'\b(2nd|second)\b'), find(r'\b(3rd|third)\b')]}
             continue
-        team = next((c for c in cells[:at] if c), team)
+        get = lambda i: cells[i] if i is not None and i < len(cells) else ''
+        if cols and cols['team'] is not None: team = get(cols['team']) or team
+        else: team = next((c for c in cells[:at] if c), team)
         if not team: errors.append(f'Line {ln}: no vendor team before {cells[at]}.'); continue
-        fb = (cells[at + 1:] + ['', '', ''])[:3]
+        fb = [get(i) for i in cols['v']] if cols and any(i is not None for i in cols['v']) else (cells[at + 1:] + ['', '', ''])[:3]
         out.append({'line': ln, 'team': team, 'email': cells[at], 'feedback': fb})
     return out, errors
 
