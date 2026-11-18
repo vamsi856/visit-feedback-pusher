@@ -12,7 +12,7 @@ import visits as VF
 HERE = os.path.dirname(os.path.abspath(__file__))
 KEYF, SESSF = os.path.join(VF.DIR, 'key.sha256'), os.path.join(VF.DIR, 'sessions.json')
 PORT = int(os.environ.get('VISITS_PORT', '8097'))
-SESSION_DAYS = 60
+SESSION_DAYS = 400                                        # the longest a browser keeps a cookie; renewed on every visit
 PAGE = open(os.path.join(HERE, 'page.html'), encoding='utf-8').read()
 LOCK = threading.Lock()
 FAILS = {}                                                # ip → [count, first] wrong keys, 10 an hour
@@ -34,6 +34,19 @@ def new_session():
         s[sha(tok)] = time.time() + SESSION_DAYS * 86400
         VF._write(SESSF, s)
     return tok
+
+
+def renew(tok):
+    """Each visit pushes the sign-in out to a full 400 days again, so a browser in use is never asked twice."""
+    now = time.time()
+    with LOCK:
+        s = sessions(); h = sha(tok)
+        if s.get(h, 0) - now < (SESSION_DAYS - 1) * 86400:
+            s[h] = now + SESSION_DAYS * 86400; VF._write(SESSF, s)
+
+
+def cookie(tok):   # Lax: a link opened from mail or chat still arrives signed in; every action also needs the page's token
+    return f'vf={tok}; Max-Age={SESSION_DAYS * 86400}; Path=/; HttpOnly; Secure; SameSite=Lax'
 
 
 def key_ok(k):
@@ -71,7 +84,7 @@ class H(http.server.BaseHTTPRequestHandler):
         for k, v in (extra or {}).items(): self.send_header(k, v)
         self.end_headers(); self.wfile.write(b)
 
-    def locked(self, msg='This browser is not signed in yet. Paste your private link (or just its key) once – it stays signed in for 60 days.'):
+    def locked(self, msg='This browser is not signed in yet. Paste your private link (or just its key) once – after that this browser stays signed in.'):
         return self.out(403, "<!doctype html><meta name=viewport content='width=device-width,initial-scale=1'><title>Visit feedback</title>"
                              "<style>body{font:16px/1.5 system-ui,sans-serif;margin:0;background:#f6f5f2;color:#1c1b19}main{max-width:520px;margin:48px auto;padding:0 16px}"
                              "input{font:inherit;width:100%;box-sizing:border-box;padding:10px;border:1px solid #ccc;border-radius:8px;min-height:44px;margin:8px 0}"
@@ -93,12 +106,13 @@ class H(http.server.BaseHTTPRequestHandler):
                 FAILS[self.ip()] = [f[0] + 1 if time.time() - f[1] < 3600 else 1, f[1] if time.time() - f[1] < 3600 else time.time()]
                 time.sleep(1); return self.locked('That link is not right.')
             t = new_session()
-            return self.out(302, '', 'text/plain', {'Location': '/', 'Set-Cookie': f'vf={t}; Max-Age={SESSION_DAYS * 86400}; Path=/; HttpOnly; Secure; SameSite=Strict'})
+            return self.out(302, '', 'text/plain', {'Location': '/', 'Set-Cookie': cookie(t)})
         t = self.tok()
         if not t: return self.locked()
+        renew(t)
         n = secrets.token_urlsafe(16)
         data = json.dumps({'csrf': self.csrf(t), 'center': 'KNL', 'project': 'Supernova'}).replace('<', '\\u003c')
-        return self.out(200, PAGE.replace('__DATA__', data).replace('<script>', f'<script nonce="{n}">'), nonce=n)
+        return self.out(200, PAGE.replace('__DATA__', data).replace('<script>', f'<script nonce="{n}">'), extra={'Set-Cookie': cookie(t)}, nonce=n)
 
     def do_POST(self):
         n = int(self.headers.get('Content-Length') or 0)
